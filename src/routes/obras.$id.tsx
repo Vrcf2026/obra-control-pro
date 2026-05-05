@@ -50,8 +50,10 @@ function Detalhe() {
   const totInterno = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adTot = adendas.reduce((s, a) => ({ cli: s.cli + Number(a.valor_cliente), int: s.int + Number(a.valor_interno) }), { cli: 0, int: 0 });
   const totalFaturavel = Number(obra.orcamento_cliente) + adTot.cli;
-  const margem = totalFaturavel - (totInterno + adTot.int);
-  const margemPct = totalFaturavel > 0 ? (margem / totalFaturavel) * 100 : 0;
+  const margemPrev = totalFaturavel - (totInterno + adTot.int);
+  const margemPrevPct = totalFaturavel > 0 ? (margemPrev / totalFaturavel) * 100 : 0;
+  const margemAtual = totalFaturavel - totGasto;
+  const margemAtualPct = totalFaturavel > 0 ? (margemAtual / totalFaturavel) * 100 : 0;
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -86,7 +88,14 @@ function Detalhe() {
         <Linha label="Total faturável" value={eur(totalFaturavel)} bold />
         <div className="border-t border-border my-2" />
         <Linha label="Orçamento interno" value={eur(totInterno + adTot.int)} />
-        <Linha label="Margem prevista" value={`${eur(margem)} · ${margemPct.toFixed(1)}%`} className={margem >= 0 ? "text-success" : "text-danger"} bold />
+        <Linha label="Margem prevista" value={`${eur(margemPrev)} · ${margemPrevPct.toFixed(1)}%`} className={margemPrev >= 0 ? "text-success" : "text-danger"} bold />
+        {totGasto > 0 && (
+          <>
+            <div className="border-t border-border my-2" />
+            <Linha label="Gasto real até agora" value={eur(totGasto)} />
+            <Linha label="Margem actual" value={`${eur(margemAtual)} · ${margemAtualPct.toFixed(1)}%`} className={margemAtual >= 0 ? "text-success" : "text-danger"} bold />
+          </>
+        )}
       </div>
 
       {/* Rubricas */}
