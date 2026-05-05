@@ -25,7 +25,7 @@ function Encarregado() {
     <div className="p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full">
       <div>
         <h1 className="text-2xl font-semibold">As minhas obras</h1>
-        <p className="text-sm text-muted-foreground">Toque numa obra para registar lançamentos</p>
+        <p className="text-sm text-muted-foreground">Toque numa obra para registar despesas</p>
       </div>
       {loading ? (
         <div className="p-8 text-center text-muted-foreground">A carregar...</div>
