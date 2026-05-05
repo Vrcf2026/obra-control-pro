@@ -88,7 +88,14 @@ function Detalhe() {
         <Linha label="Total faturável" value={eur(totalFaturavel)} bold />
         <div className="border-t border-border my-2" />
         <Linha label="Orçamento interno" value={eur(totInterno + adTot.int)} />
-        <Linha label="Margem prevista" value={`${eur(margem)} · ${margemPct.toFixed(1)}%`} className={margem >= 0 ? "text-success" : "text-danger"} bold />
+        <Linha label="Margem prevista" value={`${eur(margemPrev)} · ${margemPrevPct.toFixed(1)}%`} className={margemPrev >= 0 ? "text-success" : "text-danger"} bold />
+        {totGasto > 0 && (
+          <>
+            <div className="border-t border-border my-2" />
+            <Linha label="Gasto real até agora" value={eur(totGasto)} />
+            <Linha label="Margem actual" value={`${eur(margemAtual)} · ${margemAtualPct.toFixed(1)}%`} className={margemAtual >= 0 ? "text-success" : "text-danger"} bold />
+          </>
+        )}
       </div>
 
       {/* Rubricas */}
