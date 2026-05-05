@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, HardHat, Settings, LogOut, Building2 } from "lucide-react";
+import { LayoutDashboard, HardHat, Settings, LogOut, Building2, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { ReactNode } from "react";
 
