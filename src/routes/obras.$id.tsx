@@ -50,8 +50,10 @@ function Detalhe() {
   const totInterno = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adTot = adendas.reduce((s, a) => ({ cli: s.cli + Number(a.valor_cliente), int: s.int + Number(a.valor_interno) }), { cli: 0, int: 0 });
   const totalFaturavel = Number(obra.orcamento_cliente) + adTot.cli;
-  const margem = totalFaturavel - (totInterno + adTot.int);
-  const margemPct = totalFaturavel > 0 ? (margem / totalFaturavel) * 100 : 0;
+  const margemPrev = totalFaturavel - (totInterno + adTot.int);
+  const margemPrevPct = totalFaturavel > 0 ? (margemPrev / totalFaturavel) * 100 : 0;
+  const margemAtual = totalFaturavel - totGasto;
+  const margemAtualPct = totalFaturavel > 0 ? (margemAtual / totalFaturavel) * 100 : 0;
 
   return (
     <div className="p-4 md:p-8 space-y-6">
