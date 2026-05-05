@@ -117,7 +117,7 @@ function Dashboard() {
                   const consumo = r.orc_interno > 0 ? (r.gasto / r.orc_interno) * 100 : 0;
                   const desvio = r.orc_interno - r.gasto;
                   const ratio = r.orc_interno > 0 ? desvio / r.orc_interno : 0;
-                  const sem = ratio >= 0 ? "success" : ratio >= -0.1 ? "warning" : "danger";
+                  const semClass = ratio >= 0 ? "bg-success" : ratio >= -0.1 ? "bg-warning" : "bg-danger";
                   return (
                     <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                       <td className="p-3">
@@ -143,7 +143,7 @@ function Dashboard() {
                         </div>
                       </td>
                       <td className="p-3 text-center">
-                        <span className={`inline-block w-3 h-3 rounded-full bg-${sem}`} title={eur(desvio)} />
+                        <span className={`inline-block w-3 h-3 rounded-full ${semClass}`} title={eur(desvio)} />
                       </td>
                     </tr>
                   );
