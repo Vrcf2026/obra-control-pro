@@ -1,29 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { Modal, Field, ModalActions } from "./obras.$id";
+import { Modal, Field } from "./obras.$id";
 import { Plus, Users, Edit, X } from "lucide-react";
-import { estadoLabel, estadoColor } from "@/lib/format";
+import { estadoLabel, estadoColor, eur } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gestao")({
   component: () => <Protected allow={["admin"]}><Gestao /></Protected>,
 });
 
-interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; data_inicio: string | null; data_fim_previsto: string | null }
+interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; orcamento_cliente: number }
 interface Profile { id: string; nome: string; email: string | null }
 interface ObraUser { id: string; user_id: string; obra_id: string }
 
 function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
-  const [edit, setEdit] = useState<Obra | null>(null);
-  const [showNew, setShowNew] = useState(false);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
 
   useEffect(() => { load(); }, []);
   async function load() {
-    const { data } = await supabase.from("obras").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("obras").select("id,nome,cliente,localizacao,estado,orcamento_cliente").order("created_at", { ascending: false });
     setObras((data ?? []) as Obra[]);
   }
 
@@ -34,9 +32,9 @@ function Gestao() {
           <h1 className="text-2xl font-semibold">Gestão</h1>
           <p className="text-sm text-muted-foreground">Criar obras e atribuir encarregados</p>
         </div>
-        <button onClick={() => setShowNew(true)} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
+        <Link to="/gestao/obras/novo" className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
           <Plus className="w-4 h-4" /> Nova obra
-        </button>
+        </Link>
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-x-auto">
@@ -45,8 +43,8 @@ function Gestao() {
             <tr>
               <th className="text-left p-3">Nome</th>
               <th className="text-left p-3">Cliente</th>
-              <th className="text-left p-3">Localização</th>
               <th className="text-left p-3">Estado</th>
+              <th className="text-right p-3">Orç. cliente</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -55,17 +53,15 @@ function Gestao() {
               <tr key={o.id} className="border-t border-border">
                 <td className="p-3 font-medium">{o.nome}</td>
                 <td className="p-3 text-muted-foreground">{o.cliente}</td>
-                <td className="p-3 text-muted-foreground">{o.localizacao ?? "—"}</td>
-                <td className="p-3">
-                  <span className={`text-xs px-2 py-1 rounded-md font-medium ${estadoColor[o.estado]}`}>{estadoLabel[o.estado]}</span>
-                </td>
+                <td className="p-3"><span className={`text-xs px-2 py-1 rounded-md font-medium ${estadoColor[o.estado]}`}>{estadoLabel[o.estado]}</span></td>
+                <td className="p-3 text-right tabular-nums">{eur(o.orcamento_cliente)}</td>
                 <td className="p-3 text-right space-x-2 whitespace-nowrap">
                   <button onClick={() => setAssignFor(o)} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                     <Users className="w-4 h-4" /> Encarregados
                   </button>
-                  <button onClick={() => setEdit(o)} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                  <Link to="/gestao/obras/$id" params={{ id: o.id }} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                     <Edit className="w-4 h-4" /> Editar
-                  </button>
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -74,56 +70,8 @@ function Gestao() {
         </table>
       </div>
 
-      {(showNew || edit) && (
-        <ObraForm obra={edit} onClose={() => { setShowNew(false); setEdit(null); }} onSaved={() => { setShowNew(false); setEdit(null); load(); }} />
-      )}
       {assignFor && <AssignModal obra={assignFor} onClose={() => setAssignFor(null)} />}
     </div>
-  );
-}
-
-function ObraForm({ obra, onClose, onSaved }: { obra: Obra | null; onClose: () => void; onSaved: () => void }) {
-  const [nome, setNome] = useState(obra?.nome ?? "");
-  const [cliente, setCliente] = useState(obra?.cliente ?? "");
-  const [loc, setLoc] = useState(obra?.localizacao ?? "");
-  const [estado, setEstado] = useState(obra?.estado ?? "orcamentacao");
-  const [ini, setIni] = useState(obra?.data_inicio ?? "");
-  const [fim, setFim] = useState(obra?.data_fim_previsto ?? "");
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    const payload = {
-      nome, cliente, localizacao: loc || null, estado: estado as never,
-      data_inicio: ini || null, data_fim_previsto: fim || null,
-    };
-    const { error } = obra
-      ? await supabase.from("obras").update(payload).eq("id", obra.id)
-      : await supabase.from("obras").insert(payload);
-    if (error) toast.error(error.message); else { toast.success("Guardado"); onSaved(); }
-  }
-
-  return (
-    <Modal title={obra ? "Editar obra" : "Nova obra"} onClose={onClose}>
-      <form onSubmit={save} className="space-y-3">
-        <Field label="Nome"><input required value={nome} onChange={e => setNome(e.target.value)} className="input" /></Field>
-        <Field label="Cliente"><input required value={cliente} onChange={e => setCliente(e.target.value)} className="input" /></Field>
-        <Field label="Localização"><input value={loc} onChange={e => setLoc(e.target.value)} className="input" /></Field>
-        <Field label="Estado">
-          <select value={estado} onChange={e => setEstado(e.target.value)} className="input">
-            <option value="orcamentacao">Orçamentação</option>
-            <option value="adjudicada">Adjudicada</option>
-            <option value="em_curso">Em curso</option>
-            <option value="concluida">Concluída</option>
-            <option value="faturada">Faturada</option>
-          </select>
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Data início"><input type="date" value={ini ?? ""} onChange={e => setIni(e.target.value)} className="input" /></Field>
-          <Field label="Fim previsto"><input type="date" value={fim ?? ""} onChange={e => setFim(e.target.value)} className="input" /></Field>
-        </div>
-        <ModalActions onClose={onClose} />
-      </form>
-    </Modal>
   );
 }
 
@@ -141,7 +89,6 @@ function AssignModal({ obra, onClose }: { obra: Obra; onClose: () => void }) {
     setProfiles((pf ?? []) as Profile[]);
     setAssigned((au ?? []) as ObraUser[]);
   }
-
   async function add() {
     if (!pick) return;
     const { error } = await supabase.from("obra_utilizadores").insert({ obra_id: obra.id, user_id: pick, perfil: "encarregado" });
@@ -151,7 +98,6 @@ function AssignModal({ obra, onClose }: { obra: Obra; onClose: () => void }) {
     const { error } = await supabase.from("obra_utilizadores").delete().eq("id", id);
     if (error) toast.error(error.message); else load();
   }
-
   const available = profiles.filter(p => !assigned.some(a => a.user_id === p.id));
 
   return (
@@ -183,3 +129,6 @@ function AssignModal({ obra, onClose }: { obra: Obra; onClose: () => void }) {
     </Modal>
   );
 }
+
+// Re-export Field so other files can keep import
+export { Field };
