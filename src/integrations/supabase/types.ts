@@ -14,16 +14,278 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      adendas: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          obra_id: string
+          valor_cliente: number
+          valor_interno: number
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          obra_id: string
+          valor_cliente?: number
+          valor_interno?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          obra_id?: string
+          valor_cliente?: number
+          valor_interno?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adendas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string
+          fornecedor: string | null
+          id: string
+          num_documento: string | null
+          num_homens: number | null
+          obra_id: string
+          registado_por: string | null
+          rubrica_id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          descricao?: string
+          fornecedor?: string | null
+          id?: string
+          num_documento?: string | null
+          num_homens?: number | null
+          obra_id: string
+          registado_por?: string | null
+          rubrica_id: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string
+          fornecedor?: string | null
+          id?: string
+          num_documento?: string | null
+          num_homens?: number | null
+          obra_id?: string
+          registado_por?: string | null
+          rubrica_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_rubrica_id_fkey"
+            columns: ["rubrica_id"]
+            isOneToOne: false
+            referencedRelation: "rubricas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_utilizadores: {
+        Row: {
+          created_at: string
+          id: string
+          obra_id: string
+          perfil: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          obra_id: string
+          perfil?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          obra_id?: string
+          perfil?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_utilizadores_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obras: {
+        Row: {
+          cliente: string
+          created_at: string
+          data_fim_previsto: string | null
+          data_inicio: string | null
+          estado: Database["public"]["Enums"]["obra_estado"]
+          id: string
+          localizacao: string | null
+          nome: string
+        }
+        Insert: {
+          cliente: string
+          created_at?: string
+          data_fim_previsto?: string | null
+          data_inicio?: string | null
+          estado?: Database["public"]["Enums"]["obra_estado"]
+          id?: string
+          localizacao?: string | null
+          nome: string
+        }
+        Update: {
+          cliente?: string
+          created_at?: string
+          data_fim_previsto?: string | null
+          data_inicio?: string | null
+          estado?: Database["public"]["Enums"]["obra_estado"]
+          id?: string
+          localizacao?: string | null
+          nome?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nome?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      rubricas: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          obra_id: string
+          orcamento_cliente: number
+          orcamento_interno: number
+          tipo: Database["public"]["Enums"]["rubrica_tipo"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          obra_id: string
+          orcamento_cliente?: number
+          orcamento_interno?: number
+          tipo: Database["public"]["Enums"]["rubrica_tipo"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          obra_id?: string
+          orcamento_cliente?: number
+          orcamento_interno?: number
+          tipo?: Database["public"]["Enums"]["rubrica_tipo"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubricas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      user_has_obra: {
+        Args: { _obra_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "gestor" | "encarregado"
+      obra_estado:
+        | "orcamentacao"
+        | "adjudicada"
+        | "em_curso"
+        | "concluida"
+        | "faturada"
+      rubrica_tipo:
+        | "mao_de_obra"
+        | "materiais"
+        | "subempreitada"
+        | "equipamento"
+        | "outro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +412,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "gestor", "encarregado"],
+      obra_estado: [
+        "orcamentacao",
+        "adjudicada",
+        "em_curso",
+        "concluida",
+        "faturada",
+      ],
+      rubrica_tipo: [
+        "mao_de_obra",
+        "materiais",
+        "subempreitada",
+        "equipamento",
+        "outro",
+      ],
+    },
   },
 } as const
