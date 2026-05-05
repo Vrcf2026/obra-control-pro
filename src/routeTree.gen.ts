@@ -15,6 +15,7 @@ import { Route as EncarregadoRouteImport } from './routes/encarregado'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObrasIdRouteImport } from './routes/obras.$id'
 import { Route as GestaoUtilizadoresRouteImport } from './routes/gestao.utilizadores'
+import { Route as GestaoObrasIdRouteImport } from './routes/gestao.obras.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -46,6 +47,11 @@ const GestaoUtilizadoresRoute = GestaoUtilizadoresRouteImport.update({
   path: '/utilizadores',
   getParentRoute: () => GestaoRoute,
 } as any)
+const GestaoObrasIdRoute = GestaoObrasIdRouteImport.update({
+  id: '/obras/$id',
+  path: '/obras/$id',
+  getParentRoute: () => GestaoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
+  '/gestao/obras/$id': typeof GestaoObrasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
+  '/gestao/obras/$id': typeof GestaoObrasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
+  '/gestao/obras/$id': typeof GestaoObrasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/gestao/utilizadores'
     | '/obras/$id'
+    | '/gestao/obras/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/gestao/utilizadores'
     | '/obras/$id'
+    | '/gestao/obras/$id'
   id:
     | '__root__'
     | '/'
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/gestao/utilizadores'
     | '/obras/$id'
+    | '/gestao/obras/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -151,15 +163,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoUtilizadoresRouteImport
       parentRoute: typeof GestaoRoute
     }
+    '/gestao/obras/$id': {
+      id: '/gestao/obras/$id'
+      path: '/obras/$id'
+      fullPath: '/gestao/obras/$id'
+      preLoaderRoute: typeof GestaoObrasIdRouteImport
+      parentRoute: typeof GestaoRoute
+    }
   }
 }
 
 interface GestaoRouteChildren {
   GestaoUtilizadoresRoute: typeof GestaoUtilizadoresRoute
+  GestaoObrasIdRoute: typeof GestaoObrasIdRoute
 }
 
 const GestaoRouteChildren: GestaoRouteChildren = {
   GestaoUtilizadoresRoute: GestaoUtilizadoresRoute,
+  GestaoObrasIdRoute: GestaoObrasIdRoute,
 }
 
 const GestaoRouteWithChildren =
