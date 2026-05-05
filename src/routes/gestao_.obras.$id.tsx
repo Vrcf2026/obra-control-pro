@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
-export const Route = createFileRoute("/gestao/obras/$id")({
+export const Route = createFileRoute("/gestao_/obras/$id")({
   component: () => <Protected allow={["admin"]}><Editor /></Protected>,
 });
 
