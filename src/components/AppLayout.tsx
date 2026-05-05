@@ -7,6 +7,7 @@ const allNav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "gestor"] as const },
   { to: "/encarregado", label: "As minhas obras", icon: HardHat, roles: ["encarregado", "admin"] as const },
   { to: "/gestao", label: "Gestão", icon: Settings, roles: ["admin"] as const },
+  { to: "/gestao/utilizadores", label: "Utilizadores", icon: Users, roles: ["admin"] as const },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
