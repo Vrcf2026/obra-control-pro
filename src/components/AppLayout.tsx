@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, HardHat, Settings, LogOut, Building2 } from "lucide-react";
+import { LayoutDashboard, HardHat, Settings, LogOut, Building2, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { ReactNode } from "react";
 
@@ -7,6 +7,7 @@ const allNav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "gestor"] as const },
   { to: "/encarregado", label: "As minhas obras", icon: HardHat, roles: ["encarregado", "admin"] as const },
   { to: "/gestao", label: "Gestão", icon: Settings, roles: ["admin"] as const },
+  { to: "/gestao/utilizadores", label: "Utilizadores", icon: Users, roles: ["admin"] as const },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -15,7 +16,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const nav = allNav.filter(n => role && n.roles.includes(role as never));
 
-  const isActive = (to: string) => to === "/" ? path === "/" : path.startsWith(to);
+  const isActive = (to: string) => to === "/" ? path === "/" : to === "/gestao" ? path === "/gestao" : path.startsWith(to);
 
   return (
     <div className="min-h-screen flex bg-background">
