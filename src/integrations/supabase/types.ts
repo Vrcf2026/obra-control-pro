@@ -59,8 +59,6 @@ export type Database = {
           descricao: string
           fornecedor: string | null
           id: string
-          num_documento: string | null
-          num_homens: number | null
           obra_id: string
           registado_por: string | null
           rubrica_id: string
@@ -72,8 +70,6 @@ export type Database = {
           descricao?: string
           fornecedor?: string | null
           id?: string
-          num_documento?: string | null
-          num_homens?: number | null
           obra_id: string
           registado_por?: string | null
           rubrica_id: string
@@ -85,8 +81,6 @@ export type Database = {
           descricao?: string
           fornecedor?: string | null
           id?: string
-          num_documento?: string | null
-          num_homens?: number | null
           obra_id?: string
           registado_por?: string | null
           rubrica_id?: string
@@ -151,6 +145,7 @@ export type Database = {
           id: string
           localizacao: string | null
           nome: string
+          orcamento_cliente: number
         }
         Insert: {
           cliente: string
@@ -161,6 +156,7 @@ export type Database = {
           id?: string
           localizacao?: string | null
           nome: string
+          orcamento_cliente?: number
         }
         Update: {
           cliente?: string
@@ -171,6 +167,7 @@ export type Database = {
           id?: string
           localizacao?: string | null
           nome?: string
+          orcamento_cliente?: number
         }
         Relationships: []
       }
@@ -201,27 +198,21 @@ export type Database = {
           id: string
           nome: string
           obra_id: string
-          orcamento_cliente: number
           orcamento_interno: number
-          tipo: Database["public"]["Enums"]["rubrica_tipo"]
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
           obra_id: string
-          orcamento_cliente?: number
           orcamento_interno?: number
-          tipo: Database["public"]["Enums"]["rubrica_tipo"]
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
           obra_id?: string
-          orcamento_cliente?: number
           orcamento_interno?: number
-          tipo?: Database["public"]["Enums"]["rubrica_tipo"]
         }
         Relationships: [
           {
