@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GestaoRouteImport } from './routes/gestao'
 import { Route as EncarregadoRouteImport } from './routes/encarregado'
@@ -17,6 +18,11 @@ import { Route as ObrasIdRouteImport } from './routes/obras.$id'
 import { Route as GestaoUtilizadoresRouteImport } from './routes/gestao.utilizadores'
 import { Route as GestaoObrasIdRouteImport } from './routes/gestao_.obras.$id'
 
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/encarregado': typeof EncarregadoRoute
   '/gestao': typeof GestaoRouteWithChildren
   '/login': typeof LoginRoute
+  '/relatorios': typeof RelatoriosRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
   '/gestao/obras/$id': typeof GestaoObrasIdRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/encarregado': typeof EncarregadoRoute
   '/gestao': typeof GestaoRouteWithChildren
   '/login': typeof LoginRoute
+  '/relatorios': typeof RelatoriosRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
   '/gestao/obras/$id': typeof GestaoObrasIdRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/encarregado': typeof EncarregadoRoute
   '/gestao': typeof GestaoRouteWithChildren
   '/login': typeof LoginRoute
+  '/relatorios': typeof RelatoriosRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
   '/gestao_/obras/$id': typeof GestaoObrasIdRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/encarregado'
     | '/gestao'
     | '/login'
+    | '/relatorios'
     | '/gestao/utilizadores'
     | '/obras/$id'
     | '/gestao/obras/$id'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/encarregado'
     | '/gestao'
     | '/login'
+    | '/relatorios'
     | '/gestao/utilizadores'
     | '/obras/$id'
     | '/gestao/obras/$id'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/encarregado'
     | '/gestao'
     | '/login'
+    | '/relatorios'
     | '/gestao/utilizadores'
     | '/obras/$id'
     | '/gestao_/obras/$id'
@@ -116,12 +128,20 @@ export interface RootRouteChildren {
   EncarregadoRoute: typeof EncarregadoRoute
   GestaoRoute: typeof GestaoRouteWithChildren
   LoginRoute: typeof LoginRoute
+  RelatoriosRoute: typeof RelatoriosRoute
   ObrasIdRoute: typeof ObrasIdRoute
   GestaoObrasIdRoute: typeof GestaoObrasIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -190,6 +210,7 @@ const rootRouteChildren: RootRouteChildren = {
   EncarregadoRoute: EncarregadoRoute,
   GestaoRoute: GestaoRouteWithChildren,
   LoginRoute: LoginRoute,
+  RelatoriosRoute: RelatoriosRoute,
   ObrasIdRoute: ObrasIdRoute,
   GestaoObrasIdRoute: GestaoObrasIdRoute,
 }

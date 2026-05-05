@@ -121,7 +121,7 @@ function MargemPorObra({ obras, rubricas, lancamentos, adendas }: {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis type="number" unit="%" stroke="hsl(var(--muted-foreground))" />
             <YAxis type="category" dataKey="nome" width={140} stroke="hsl(var(--muted-foreground))" />
-            <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+            <Tooltip formatter={(v: any) => `${v}%`} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
             <Bar dataKey="pct" name="Margem %">
               {data.map((d, i) => (
                 <Cell key={i} fill={d.pct > 15 ? "#16a34a" : d.pct >= 0 ? "#eab308" : "#dc2626"} />
@@ -187,7 +187,7 @@ function RubricaCharts({ obras, rubricas, lancamentos }: {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="nome" stroke="hsl(var(--muted-foreground))" />
               <YAxis stroke="hsl(var(--muted-foreground))" />
-              <Tooltip formatter={(v: number) => eur(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+              <Tooltip formatter={(v: any) => eur(Number(v))} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
               <Legend />
               <Bar dataKey="orcamento" name="Orçamento interno" fill="#2563eb" />
               <Bar dataKey="gasto" name="Gasto real" fill="#f97316" />
@@ -204,7 +204,7 @@ function RubricaCharts({ obras, rubricas, lancamentos }: {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="semana" stroke="hsl(var(--muted-foreground))" />
               <YAxis stroke="hsl(var(--muted-foreground))" />
-              <Tooltip formatter={(v: number) => eur(v)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+              <Tooltip formatter={(v: any) => eur(Number(v))} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
               <Line type="monotone" dataKey="gasto" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} name="Gasto acumulado" />
             </LineChart>
           </ResponsiveContainer>
