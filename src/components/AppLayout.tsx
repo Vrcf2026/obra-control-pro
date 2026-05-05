@@ -16,7 +16,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const nav = allNav.filter(n => role && n.roles.includes(role as never));
 
-  const isActive = (to: string) => to === "/" ? path === "/" : path.startsWith(to);
+  const isActive = (to: string) => to === "/" ? path === "/" : to === "/gestao" ? path === "/gestao" : path.startsWith(to);
 
   return (
     <div className="min-h-screen flex bg-background">
