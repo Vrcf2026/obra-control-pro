@@ -1,0 +1,1 @@
+ALTER TABLE public.adendas DROP COLUMN IF EXISTS valor_interno;

@@ -5,27 +5,28 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
-import { Plus, ArrowLeft, Receipt, FileText, X, Trash2 } from "lucide-react";
+import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
 
 interface Rubrica { id: string; nome: string; orcamento_interno: number; gasto?: number }
 interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number }
-interface Adenda { id: string; descricao: string; valor_cliente: number; valor_interno: number; data: string }
+interface Adenda { id: string; descricao: string; valor_cliente: number; data: string }
 interface Fatura { id: string; data: string; num_fatura: string; descricao: string | null; valor: number }
 interface Obra {
   id: string; nome: string; cliente: string; localizacao: string | null; estado: string;
   data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number;
 }
 
-// Regras por estado
+// Regras por estado (visibilidade)
 const ALLOW = {
   despesas: ["adjudicada", "em_curso"],
   adendas: ["adjudicada", "em_curso", "concluida"],
   editar: ["orcamentacao", "adjudicada", "em_curso"],
   faturas: ["adjudicada", "em_curso", "concluida"],
 };
+const ESTADOS = ["orcamentacao", "adjudicada", "em_curso", "concluida", "faturada"] as const;
 
 function Detalhe() {
   const { id } = Route.useParams();
@@ -39,6 +40,7 @@ function Detalhe() {
   const [adRubs, setAdRubs] = useState<AdendaRub[]>([]);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
   const [showAdenda, setShowAdenda] = useState(false);
+  const [editAdenda, setEditAdenda] = useState<Adenda | null>(null);
   const [showDespesa, setShowDespesa] = useState(false);
   const [showFatura, setShowFatura] = useState(false);
 
@@ -71,13 +73,9 @@ function Detalhe() {
 
   const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0);
   const totInterno = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
-  // Total interno das adendas: soma das adenda_rubricas; fallback para valor_interno legado se não houver rubricas
-  const adIntPorAdenda = (adId: string) => {
-    const subs = adRubs.filter(r => r.adenda_id === adId);
-    if (subs.length > 0) return subs.reduce((s, r) => s + Number(r.valor), 0);
-    return 0;
-  };
-  const adTotInt = adendas.reduce((s, a) => s + adIntPorAdenda(a.id) + (adRubs.some(r => r.adenda_id === a.id) ? 0 : Number(a.valor_interno)), 0);
+  const adIntPorAdenda = (adId: string) =>
+    adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
+  const adTotInt = adendas.reduce((s, a) => s + adIntPorAdenda(a.id), 0);
   const adTotCli = adendas.reduce((s, a) => s + Number(a.valor_cliente), 0);
   const totalFaturavel = Number(obra.orcamento_cliente) + adTotCli;
   const margemPrev = totalFaturavel - (totInterno + adTotInt);
@@ -108,13 +106,26 @@ function Detalhe() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-1 rounded-md font-medium w-fit ${estadoColor[obra.estado]}`}>{estadoLabel[obra.estado]}</span>
-            {canSpendRole && (
+            {isAdmin ? (
+              <select
+                value={obra.estado}
+                onChange={async e => {
+                  const novo = e.target.value;
+                  const { error } = await supabase.from("obras").update({ estado: novo as any }).eq("id", obra.id);
+                  if (error) toast.error(error.message);
+                  else { toast.success("Estado actualizado"); load(); }
+                }}
+                className="text-sm border border-input rounded-md px-2 py-1 bg-background"
+              >
+                {ESTADOS.map(e => <option key={e} value={e}>{estadoLabel[e]}</option>)}
+              </select>
+            ) : (
+              <span className={`text-xs px-2 py-1 rounded-md font-medium w-fit ${estadoColor[obra.estado]}`}>{estadoLabel[obra.estado]}</span>
+            )}
+            {canSpendRole && podeDespesa && (
               <button
                 onClick={() => setShowDespesa(true)}
-                disabled={!podeDespesa}
-                title={podeDespesa ? "" : `Não é possível registar despesas no estado "${estadoLabel[obra.estado]}"`}
-                className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
               >
                 <Receipt className="w-4 h-4" /> Registar despesa
               </button>
@@ -193,63 +204,60 @@ function Detalhe() {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Adendas</h2>
-          {isAdmin && (
+          {isAdmin && podeAdenda && (
             <button
-              onClick={() => setShowAdenda(true)}
-              disabled={!podeAdenda}
-              title={podeAdenda ? "" : `Não é possível criar adendas no estado "${estadoLabel[obra.estado]}"`}
-              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => { setEditAdenda(null); setShowAdenda(true); }}
+              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1"
             >
               <Plus className="w-4 h-4" /> Nova adenda
             </button>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="text-left p-3">Data</th>
-                <th className="text-left p-3">Descrição</th>
-                <th className="text-right p-3">Valor cliente</th>
-                <th className="text-right p-3">Total interno</th>
-                <th className="text-right p-3">Margem €</th>
-                <th className="text-right p-3">Margem %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {adendas.map(a => {
-                const subs = adRubs.filter(r => r.adenda_id === a.id);
-                const intTot = subs.length > 0 ? subs.reduce((s, r) => s + Number(r.valor), 0) : Number(a.valor_interno);
-                const m = Number(a.valor_cliente) - intTot;
-                const mp = a.valor_cliente > 0 ? (m / Number(a.valor_cliente)) * 100 : 0;
-                return (
-                  <tr key={a.id} className="border-t border-border">
-                    <td className="p-3 text-muted-foreground">{a.data}</td>
-                    <td className="p-3">
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary mr-2">Adenda</span>
-                      {a.descricao}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">{eur(a.valor_cliente)}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(intTot)}</td>
-                    <td className={`p-3 text-right tabular-nums ${m >= 0 ? "text-success" : "text-danger"}`}>{eur(m)}</td>
-                    <td className={`p-3 text-right tabular-nums ${m >= 0 ? "text-success" : "text-danger"}`}>{mp.toFixed(1)}%</td>
-                  </tr>
-                );
-              })}
-              {adendas.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Sem adendas.</td></tr>}
-            </tbody>
-            {adendas.length > 0 && (
-              <tfoot className="bg-muted/30 font-medium">
-                <tr>
-                  <td className="p-3" colSpan={2}>Totais</td>
-                  <td className="p-3 text-right tabular-nums">{eur(adTotCli)}</td>
-                  <td className="p-3 text-right tabular-nums">{eur(adTotInt)}</td>
-                  <td className={`p-3 text-right tabular-nums ${adTotCli - adTotInt >= 0 ? "text-success" : "text-danger"}`}>{eur(adTotCli - adTotInt)}</td>
-                  <td className="p-3"></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+        <div className="p-5 space-y-4">
+          {adendas.length === 0 && <div className="p-6 text-center text-muted-foreground">Sem adendas.</div>}
+          {adendas.map(a => {
+            const subs = adRubs.filter(r => r.adenda_id === a.id);
+            const intTot = subs.reduce((s, r) => s + Number(r.valor), 0);
+            const m = Number(a.valor_cliente) - intTot;
+            const mp = a.valor_cliente > 0 ? (m / Number(a.valor_cliente)) * 100 : 0;
+            return (
+              <div key={a.id} className="border border-border rounded-md">
+                <div className="flex items-start justify-between p-3 gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">{a.data}</div>
+                    <div className="font-medium">{a.descricao}</div>
+                    <div className="mt-1 text-sm text-primary tabular-nums">Valor cliente: {eur(a.valor_cliente)}</div>
+                  </div>
+                  {isAdmin && podeAdenda && (
+                    <button onClick={() => { setEditAdenda(a); setShowAdenda(true); }} className="text-muted-foreground hover:text-foreground" title="Editar">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {subs.length > 0 && (
+                  <table className="w-full text-sm border-t border-border">
+                    <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                      <tr><th className="text-left p-2">Rubrica interna</th><th className="text-right p-2">Valor</th></tr>
+                    </thead>
+                    <tbody>
+                      {subs.map(s => (
+                        <tr key={s.id} className="border-t border-border">
+                          <td className="p-2">{s.nome}</td>
+                          <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                <div className="border-t border-border p-3 grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Total interno</span><span className="tabular-nums">{eur(intTot)}</span></div>
+                  <div className={`flex justify-between font-semibold ${m >= 0 ? "text-success" : "text-danger"}`}>
+                    <span>Margem</span><span className="tabular-nums">{eur(m)} · {mp.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -257,12 +265,10 @@ function Detalhe() {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Faturação</h2>
-          {isAdminGestor && (
+          {isAdminGestor && podeFatura && (
             <button
               onClick={() => setShowFatura(true)}
-              disabled={!podeFatura}
-              title={podeFatura ? "" : `Não é possível faturar no estado "${estadoLabel[obra.estado]}"`}
-              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1"
             >
               <FileText className="w-4 h-4" /> Registar fatura
             </button>
@@ -314,7 +320,7 @@ function Detalhe() {
         </div>
       </div>
 
-      {showAdenda && <AdendaPanel obraId={id} onClose={() => setShowAdenda(false)} onSaved={() => { setShowAdenda(false); load(); }} />}
+      {showAdenda && <AdendaPanel obraId={id} adenda={editAdenda} onClose={() => { setShowAdenda(false); setEditAdenda(null); }} onSaved={() => { setShowAdenda(false); setEditAdenda(null); load(); }} />}
       {showDespesa && <DespesaPanel obraId={id} rubricas={rubricas} onClose={() => setShowDespesa(false)} onSaved={() => { setShowDespesa(false); load(); }} />}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
     </div>
@@ -331,12 +337,20 @@ function Linha({ label, value, bold, className }: { label: string; value: string
 }
 
 // ===== Adenda Panel (slide-in com rubricas internas) =====
-function AdendaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: () => void; onSaved: () => void }) {
-  const [descricao, setDescricao] = useState("");
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
-  const [vc, setVc] = useState("0");
+function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; adenda: Adenda | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!adenda;
+  const [descricao, setDescricao] = useState(adenda?.descricao ?? "");
+  const [data, setData] = useState(adenda?.data ?? new Date().toISOString().slice(0, 10));
+  const [vc, setVc] = useState(adenda ? String(adenda.valor_cliente) : "0");
   const [linhas, setLinhas] = useState<{ nome: string; valor: string }[]>([{ nome: "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!adenda) return;
+    supabase.from("adenda_rubricas").select("nome,valor").eq("adenda_id", adenda.id).then(({ data }) => {
+      if (data && data.length > 0) setLinhas(data.map(r => ({ nome: r.nome, valor: String(r.valor) })));
+    });
+  }, [adenda]);
 
   function setLinha(i: number, patch: Partial<{ nome: string; valor: string }>) {
     setLinhas(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
@@ -357,25 +371,33 @@ function AdendaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: ()
 
   async function save() {
     if (!descricao) { toast.error("Indique a descrição"); return; }
-    const { data: ad, error } = await supabase.from("adendas").insert({
-      obra_id: obraId, descricao, data, valor_cliente: valorCli, valor_interno: totalInterno,
-    }).select("id").single();
-    if (error || !ad) { toast.error(error?.message ?? "Erro"); return; }
+    let adId = adenda?.id;
+    if (isEdit && adId) {
+      const { error } = await supabase.from("adendas").update({ descricao, data, valor_cliente: valorCli }).eq("id", adId);
+      if (error) { toast.error(error.message); return; }
+      await supabase.from("adenda_rubricas").delete().eq("adenda_id", adId);
+    } else {
+      const { data: ad, error } = await supabase.from("adendas").insert({
+        obra_id: obraId, descricao, data, valor_cliente: valorCli,
+      }).select("id").single();
+      if (error || !ad) { toast.error(error?.message ?? "Erro"); return; }
+      adId = ad.id;
+    }
     const validas = linhas.filter(l => l.nome && Number(l.valor) > 0);
-    if (validas.length > 0) {
+    if (validas.length > 0 && adId) {
       const { error: e2 } = await supabase.from("adenda_rubricas").insert(
-        validas.map(l => ({ adenda_id: ad.id, nome: l.nome, valor: Number(l.valor) }))
+        validas.map(l => ({ adenda_id: adId!, nome: l.nome, valor: Number(l.valor) }))
       );
       if (e2) { toast.error(e2.message); return; }
     }
-    toast.success("Adenda criada"); onSaved();
+    toast.success(isEdit ? "Adenda actualizada" : "Adenda criada"); onSaved();
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
       <div className="bg-card w-full sm:max-w-lg h-full overflow-y-auto border-l border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Nova adenda</h3>
+          <h3 className="text-lg font-semibold">{isEdit ? "Editar adenda" : "Nova adenda"}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 

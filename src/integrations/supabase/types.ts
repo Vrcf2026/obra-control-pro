@@ -54,7 +54,6 @@ export type Database = {
           id: string
           obra_id: string
           valor_cliente: number
-          valor_interno: number
         }
         Insert: {
           created_at?: string
@@ -63,7 +62,6 @@ export type Database = {
           id?: string
           obra_id: string
           valor_cliente?: number
-          valor_interno?: number
         }
         Update: {
           created_at?: string
@@ -72,7 +70,6 @@ export type Database = {
           id?: string
           obra_id?: string
           valor_cliente?: number
-          valor_interno?: number
         }
         Relationships: [
           {
