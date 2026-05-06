@@ -743,25 +743,27 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
 }
 
 // ===== Fatura Panel (slide-in) =====
-function FaturaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: () => void; onSaved: () => void }) {
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
-  const [num, setNum] = useState("");
-  const [desc, setDesc] = useState("");
-  const [valor, setValor] = useState("0");
+function FaturaPanel({ obraId, fatura, onClose, onSaved }: { obraId: string; fatura?: Fatura; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!fatura;
+  const [data, setData] = useState(fatura?.data ?? new Date().toISOString().slice(0, 10));
+  const [num, setNum] = useState(fatura?.num_fatura ?? "");
+  const [desc, setDesc] = useState(fatura?.descricao ?? "");
+  const [valor, setValor] = useState(fatura ? String(fatura.valor) : "0");
 
   async function save() {
     if (!num) { toast.error("Indique o nº da fatura"); return; }
-    const { error } = await supabase.from("faturas_emitidas").insert({
-      obra_id: obraId, data, num_fatura: num, descricao: desc || null, valor: Number(valor),
-    });
-    if (error) toast.error(error.message); else { toast.success("Fatura registada"); onSaved(); }
+    const payload = { data, num_fatura: num, descricao: desc || null, valor: Number(valor) };
+    const { error } = isEdit && fatura
+      ? await supabase.from("faturas_emitidas").update(payload).eq("id", fatura.id)
+      : await supabase.from("faturas_emitidas").insert({ obra_id: obraId, ...payload });
+    if (error) toast.error(error.message); else { toast.success(isEdit ? "Fatura actualizada" : "Fatura registada"); onSaved(); }
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
       <div className="bg-card w-full sm:max-w-lg h-full overflow-y-auto border-l border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Registar fatura</h3>
+          <h3 className="text-lg font-semibold">{isEdit ? "Editar fatura" : "Registar fatura"}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 
