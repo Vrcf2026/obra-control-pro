@@ -68,10 +68,11 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground">Visão global das obras</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card icon={<Briefcase className="w-5 h-5" />} label="Obras activas" value={String(summary.ativas)} />
         <Card icon={<TrendingUp className="w-5 h-5" />} label="Margem prevista total" value={eur(summary.margem)} accent={summary.margem >= 0 ? "success" : "danger"} />
-        <Card icon={<AlertTriangle className="w-5 h-5" />} label="Obras em risco" value={String(summary.risco)} accent={summary.risco > 0 ? "danger" : undefined} />
+        <Card icon={<AlertTriangle className="w-5 h-5" />} label="Em atenção" value={String(summary.atencao)} accent={summary.atencao > 0 ? "warning" : undefined} />
+        <Card icon={<AlertTriangle className="w-5 h-5" />} label="Em risco" value={String(summary.risco)} accent={summary.risco > 0 ? "danger" : undefined} />
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
