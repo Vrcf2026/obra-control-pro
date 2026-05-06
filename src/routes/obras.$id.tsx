@@ -11,7 +11,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
 
 interface Rubrica { id: string; nome: string; orcamento_interno: number; gasto?: number }
-interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number }
+interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number; gasto?: number }
 interface Adenda { id: string; descricao: string; valor_cliente: number; data: string; tipo: "extra" | "principal" }
 interface Fatura { id: string; data: string; num_fatura: string; descricao: string | null; valor: number }
 interface Obra {
@@ -50,20 +50,24 @@ function Detalhe() {
     const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }] = await Promise.all([
       supabase.from("obras").select("*").eq("id", id).maybeSingle(),
       supabase.from("rubricas").select("*").eq("obra_id", id).order("created_at"),
-      supabase.from("lancamentos").select("rubrica_id,valor").eq("obra_id", id),
+      supabase.from("lancamentos").select("rubrica_id,adenda_rubrica_id,valor").eq("obra_id", id),
       supabase.from("adendas").select("*").eq("obra_id", id).order("data", { ascending: false }),
       supabase.from("faturas_emitidas").select("*").eq("obra_id", id).order("data", { ascending: false }),
     ]);
     setObra(o as unknown as Obra | null);
-    const gastos = new Map<string, number>();
-    (l ?? []).forEach(x => gastos.set(x.rubrica_id, (gastos.get(x.rubrica_id) ?? 0) + Number(x.valor)));
-    setRubricas((r ?? []).map(x => ({ id: x.id, nome: x.nome, orcamento_interno: Number(x.orcamento_interno), gasto: gastos.get(x.id) ?? 0 })));
+    const gastosRub = new Map<string, number>();
+    const gastosAd = new Map<string, number>();
+    (l ?? []).forEach((x: any) => {
+      if (x.rubrica_id) gastosRub.set(x.rubrica_id, (gastosRub.get(x.rubrica_id) ?? 0) + Number(x.valor));
+      if (x.adenda_rubrica_id) gastosAd.set(x.adenda_rubrica_id, (gastosAd.get(x.adenda_rubrica_id) ?? 0) + Number(x.valor));
+    });
+    setRubricas((r ?? []).map(x => ({ id: x.id, nome: x.nome, orcamento_interno: Number(x.orcamento_interno), gasto: gastosRub.get(x.id) ?? 0 })));
     const adArr = (a ?? []) as Adenda[];
     setAdendas(adArr);
     setFaturas(((f ?? []) as Fatura[]).map(x => ({ ...x, valor: Number(x.valor) })));
     if (adArr.length > 0) {
       const { data: ar } = await supabase.from("adenda_rubricas").select("*").in("adenda_id", adArr.map(x => x.id));
-      setAdRubs(((ar ?? []) as AdendaRub[]).map(x => ({ ...x, valor: Number(x.valor) })));
+      setAdRubs(((ar ?? []) as AdendaRub[]).map(x => ({ ...x, valor: Number(x.valor), gasto: gastosAd.get(x.id) ?? 0 })));
     } else {
       setAdRubs([]);
     }
@@ -71,7 +75,7 @@ function Detalhe() {
 
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
 
-  const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0);
+  const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0);
   const totInternoBase = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adIntPorAdenda = (adId: string) =>
     adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
@@ -103,6 +107,7 @@ function Detalhe() {
     const key = r.nome.trim().toLowerCase();
     const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
     cur.adendas += Number(r.valor);
+    cur.gasto += r.gasto ?? 0;
     consolidado.set(key, cur);
   });
   const consolidadoArr = Array.from(consolidado.values());
@@ -246,6 +251,10 @@ function Detalhe() {
             {adendasExtra.map(a => {
               const subs = adRubs.filter(r => r.adenda_id === a.id);
               const intTot = subs.reduce((s, r) => s + Number(r.valor), 0);
+              const gastoTot = subs.reduce((s, r) => s + (r.gasto ?? 0), 0);
+              const desvioTot = intTot - gastoTot;
+              const margemAd = Number(a.valor_cliente) - intTot;
+              const margemAdPct = a.valor_cliente > 0 ? (margemAd / Number(a.valor_cliente)) * 100 : 0;
               return (
                 <div key={a.id} className="border border-border rounded-md">
                   <div className="p-3 flex items-start justify-between gap-3">
@@ -258,21 +267,45 @@ function Detalhe() {
                   {subs.length > 0 && (
                     <table className="w-full text-sm border-t border-border">
                       <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-                        <tr><th className="text-left p-2">Rubrica</th><th className="text-right p-2">Orç. interno</th></tr>
+                        <tr>
+                          <th className="text-left p-2">Rubrica</th>
+                          <th className="text-right p-2">Orç. interno</th>
+                          <th className="text-right p-2">Gasto real</th>
+                          <th className="text-right p-2">Desvio</th>
+                          <th className="text-right p-2">% Cons.</th>
+                        </tr>
                       </thead>
                       <tbody>
-                        {subs.map(s => (
-                          <tr key={s.id} className="border-t border-border">
-                            <td className="p-2">{s.nome}</td>
-                            <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
-                          </tr>
-                        ))}
+                        {subs.map(s => {
+                          const g = s.gasto ?? 0;
+                          const d = Number(s.valor) - g;
+                          const c = Number(s.valor) > 0 ? (g / Number(s.valor)) * 100 : 0;
+                          return (
+                            <tr key={s.id} className="border-t border-border">
+                              <td className="p-2">{s.nome}</td>
+                              <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
+                              <td className="p-2 text-right tabular-nums">{eur(g)}</td>
+                              <td className={`p-2 text-right tabular-nums ${d < 0 ? "text-danger" : "text-success"}`}>{eur(d)}</td>
+                              <td className="p-2 text-right tabular-nums">{c.toFixed(0)}%</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tfoot className="bg-muted/30 font-medium">
-                        <tr><td className="p-2">Total interno</td><td className="p-2 text-right tabular-nums">{eur(intTot)}</td></tr>
+                        <tr>
+                          <td className="p-2">Totais</td>
+                          <td className="p-2 text-right tabular-nums">{eur(intTot)}</td>
+                          <td className="p-2 text-right tabular-nums">{eur(gastoTot)}</td>
+                          <td className={`p-2 text-right tabular-nums ${desvioTot < 0 ? "text-danger" : "text-success"}`}>{eur(desvioTot)}</td>
+                          <td className="p-2 text-right tabular-nums">{intTot > 0 ? ((gastoTot / intTot) * 100).toFixed(0) : 0}%</td>
+                        </tr>
                       </tfoot>
                     </table>
                   )}
+                  <div className={`border-t border-border p-3 flex justify-between text-sm font-semibold ${margemAd >= 0 ? "text-success" : "text-danger"}`}>
+                    <span>Margem da adenda</span>
+                    <span className="tabular-nums">{eur(margemAd)} · {margemAdPct.toFixed(1)}%</span>
+                  </div>
                 </div>
               );
             })}
@@ -405,7 +438,20 @@ function Detalhe() {
       </div>
 
       {showAdenda && <AdendaPanel obraId={id} adenda={editAdenda} onClose={() => { setShowAdenda(false); setEditAdenda(null); }} onSaved={() => { setShowAdenda(false); setEditAdenda(null); load(); }} />}
-      {showDespesa && <DespesaPanel obraId={id} rubricas={rubricas} onClose={() => setShowDespesa(false)} onSaved={() => { setShowDespesa(false); load(); }} />}
+      {showDespesa && (
+        <DespesaPanel
+          obraId={id}
+          rubricas={[
+            ...rubricas.map(r => ({ id: r.id, nome: r.nome, origem: "Orçamento" })),
+            ...adRubs.map(r => {
+              const ad = adendas.find(a => a.id === r.adenda_id);
+              return { id: r.id, nome: r.nome, origem: `Adenda: ${ad?.descricao ?? ""}` };
+            }),
+          ]}
+          onClose={() => setShowDespesa(false)}
+          onSaved={() => { setShowDespesa(false); load(); }}
+        />
+      )}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
     </div>
   );
