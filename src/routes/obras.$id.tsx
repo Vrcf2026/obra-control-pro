@@ -107,6 +107,7 @@ function Detalhe() {
     const key = r.nome.trim().toLowerCase();
     const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
     cur.adendas += Number(r.valor);
+    cur.gasto += r.gasto ?? 0;
     consolidado.set(key, cur);
   });
   const consolidadoArr = Array.from(consolidado.values());
