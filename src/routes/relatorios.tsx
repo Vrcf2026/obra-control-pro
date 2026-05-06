@@ -26,7 +26,7 @@ function Page() {
 
 interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number; }
 interface Rubrica { id: string; obra_id: string; nome: string; orcamento_interno: number; }
-interface Lanc { id: string; obra_id: string; rubrica_id: string; data: string; descricao: string; fornecedor: string | null; valor: number; }
+interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_rubrica_id: string | null; rubrica_nome: string | null; data: string; descricao: string; fornecedor: string | null; valor: number; }
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
 interface AdRub { adenda_id: string; valor: number }
 
