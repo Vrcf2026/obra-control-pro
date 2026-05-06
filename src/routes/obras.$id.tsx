@@ -401,20 +401,20 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 
-        <Field label="Descrição"><input value={descricao} onChange={e => setDescricao(e.target.value)} className="input" /></Field>
+        <Field label="Descrição"><input value={descricao} onChange={e => setDescricao(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="input" /></Field>
-          <Field label="Valor cliente (€)"><input type="number" step="0.01" value={vc} onChange={e => setVc(e.target.value)} className="input text-right" /></Field>
+          <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
+          <Field label="Valor cliente (€)"><input type="number" step="0.01" value={vc} onChange={e => setVc(e.target.value)} className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" /></Field>
         </div>
 
         <div className="space-y-2">
           <div className="text-sm font-medium">Rubricas internas</div>
           {linhas.map((l, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <input value={l.nome} onChange={e => setLinha(i, { nome: e.target.value })} placeholder="Nome" className="input flex-1" />
+              <input value={l.nome} onChange={e => setLinha(i, { nome: e.target.value })} placeholder="Nome" className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1" />
               <input ref={el => { valorRefs.current[i] = el; }} type="number" step="0.01" placeholder="0,00"
                 value={l.valor} onChange={e => setLinha(i, { valor: e.target.value })}
-                onKeyDown={e => onValorKey(e, i)} className="input w-28 text-right" />
+                onKeyDown={e => onValorKey(e, i)} className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" />
               <button onClick={() => removeLinha(i)} className="text-muted-foreground hover:text-danger"><X className="w-4 h-4" /></button>
             </div>
           ))}
@@ -463,11 +463,11 @@ function FaturaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: ()
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="input" /></Field>
-          <Field label="Nº fatura"><input value={num} onChange={e => setNum(e.target.value)} className="input" /></Field>
+          <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
+          <Field label="Nº fatura"><input value={num} onChange={e => setNum(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
         </div>
-        <Field label="Descrição"><input value={desc} onChange={e => setDesc(e.target.value)} className="input" /></Field>
-        <Field label="Valor (€)"><input type="number" step="0.01" value={valor} onChange={e => setValor(e.target.value)} className="input text-right" /></Field>
+        <Field label="Descrição"><input value={desc} onChange={e => setDesc(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
+        <Field label="Valor (€)"><input type="number" step="0.01" value={valor} onChange={e => setValor(e.target.value)} className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" /></Field>
 
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onClose} className="px-3 py-2 text-sm rounded-md border border-input">Cancelar</button>
