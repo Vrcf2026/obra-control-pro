@@ -32,9 +32,12 @@ function Gestao() {
           <h1 className="text-2xl font-semibold">Gestão</h1>
           <p className="text-sm text-muted-foreground">Criar obras e atribuir encarregados</p>
         </div>
-        <Link to="/gestao/obras/$id" params={{ id: "novo" }} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
-          <Plus className="w-4 h-4" /> Nova obra
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/gestao/rubricas" className="border border-input px-3 py-2 rounded-md text-sm">Rubricas padrão</Link>
+          <Link to="/gestao/obras/$id" params={{ id: "novo" }} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
+            <Plus className="w-4 h-4" /> Nova obra
+          </Link>
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-x-auto">
