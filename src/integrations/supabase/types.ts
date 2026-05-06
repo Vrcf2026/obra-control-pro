@@ -53,6 +53,7 @@ export type Database = {
           descricao: string
           id: string
           obra_id: string
+          tipo: string
           valor_cliente: number
         }
         Insert: {
@@ -61,6 +62,7 @@ export type Database = {
           descricao: string
           id?: string
           obra_id: string
+          tipo?: string
           valor_cliente?: number
         }
         Update: {
@@ -69,6 +71,7 @@ export type Database = {
           descricao?: string
           id?: string
           obra_id?: string
+          tipo?: string
           valor_cliente?: number
         }
         Relationships: [

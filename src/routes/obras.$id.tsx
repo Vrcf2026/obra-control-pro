@@ -12,7 +12,7 @@ export const Route = createFileRoute("/obras/$id")({ component: () => <Protected
 
 interface Rubrica { id: string; nome: string; orcamento_interno: number; gasto?: number }
 interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number }
-interface Adenda { id: string; descricao: string; valor_cliente: number; data: string }
+interface Adenda { id: string; descricao: string; valor_cliente: number; data: string; tipo: "extra" | "principal" }
 interface Fatura { id: string; data: string; num_fatura: string; descricao: string | null; valor: number }
 interface Obra {
   id: string; nome: string; cliente: string; localizacao: string | null; estado: string;
@@ -72,24 +72,52 @@ function Detalhe() {
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
 
   const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0);
-  const totInterno = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
+  const totInternoBase = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adIntPorAdenda = (adId: string) =>
     adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
-  const adTotInt = adendas.reduce((s, a) => s + adIntPorAdenda(a.id), 0);
+  const adendasPrincipal = adendas.filter(a => a.tipo === "principal");
+  const adendasExtra = adendas.filter(a => a.tipo === "extra");
+  const adRubsPrincipal = adRubs.filter(r => adendasPrincipal.some(a => a.id === r.adenda_id));
+  const adTotIntPrincipal = adRubsPrincipal.reduce((s, r) => s + Number(r.valor), 0);
+  const adTotIntExtra = adRubs.filter(r => adendasExtra.some(a => a.id === r.adenda_id)).reduce((s, r) => s + Number(r.valor), 0);
+  const adTotInt = adTotIntPrincipal + adTotIntExtra;
   const adTotCli = adendas.reduce((s, a) => s + Number(a.valor_cliente), 0);
   const totalFaturavel = Number(obra.orcamento_cliente) + adTotCli;
-  const margemPrev = totalFaturavel - (totInterno + adTotInt);
+  const totInterno = totInternoBase + adTotInt;
+  const margemPrev = totalFaturavel - totInterno;
   const margemPrevPct = totalFaturavel > 0 ? (margemPrev / totalFaturavel) * 100 : 0;
   const margemAtual = totalFaturavel - totGasto;
   const margemAtualPct = totalFaturavel > 0 ? (margemAtual / totalFaturavel) * 100 : 0;
 
-  const totFaturado = faturas.reduce((s, f) => s + Number(f.valor), 0);
-  const porFaturar = totalFaturavel - totFaturado;
+  // Consolidação: rubricas iniciais + rubricas das adendas tipo "principal", agrupadas por nome
+  const consolidado = new Map<string, { nome: string; orcInicial: number; adendas: number; gasto: number; rubricaIds: string[] }>();
+  rubricas.forEach(r => {
+    const key = r.nome.trim().toLowerCase();
+    const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
+    cur.orcInicial += Number(r.orcamento_interno);
+    cur.gasto += r.gasto ?? 0;
+    cur.rubricaIds.push(r.id);
+    consolidado.set(key, cur);
+  });
+  adRubsPrincipal.forEach(r => {
+    const key = r.nome.trim().toLowerCase();
+    const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
+    cur.adendas += Number(r.valor);
+    consolidado.set(key, cur);
+  });
+  const consolidadoArr = Array.from(consolidado.values());
+  const totConsInicial = consolidadoArr.reduce((s, x) => s + x.orcInicial, 0);
+  const totConsAdendas = consolidadoArr.reduce((s, x) => s + x.adendas, 0);
+  const totConsTotal = totConsInicial + totConsAdendas;
+  const totConsGasto = consolidadoArr.reduce((s, x) => s + x.gasto, 0);
 
   const podeDespesa = ALLOW.despesas.includes(obra.estado);
   const podeAdenda = ALLOW.adendas.includes(obra.estado);
   const podeEditar = ALLOW.editar.includes(obra.estado);
   const podeFatura = ALLOW.faturas.includes(obra.estado);
+
+  const totFaturado = faturas.reduce((s, f) => s + Number(f.valor), 0);
+  const porFaturar = totalFaturavel - totFaturado;
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -141,7 +169,7 @@ function Detalhe() {
         {adTotCli !== 0 && <Linha label="Adendas" value={`+${eur(adTotCli)}`} className="text-primary" />}
         <Linha label="Total faturável" value={eur(totalFaturavel)} bold />
         <div className="border-t border-border my-2" />
-        <Linha label="Orçamento interno" value={eur(totInterno + adTotInt)} />
+        <Linha label="Orçamento interno" value={eur(totInterno)} />
         <Linha label="Margem prevista" value={`${eur(margemPrev)} · ${margemPrevPct.toFixed(1)}%`} className={margemPrev >= 0 ? "text-success" : "text-danger"} bold />
         {totGasto > 0 && (
           <>
@@ -152,7 +180,7 @@ function Detalhe() {
         )}
       </div>
 
-      {/* Rubricas */}
+      {/* Rubricas consolidadas */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Rubricas</h2>
@@ -163,36 +191,43 @@ function Detalhe() {
             <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="text-left p-3">Nome</th>
-                <th className="text-right p-3">Orç. interno</th>
+                <th className="text-right p-3">Orç. inicial</th>
+                <th className="text-right p-3">+ Adendas</th>
+                <th className="text-right p-3">Orç. total</th>
                 <th className="text-right p-3">Gasto real</th>
                 <th className="text-right p-3">Desvio</th>
                 <th className="text-right p-3">% Cons.</th>
               </tr>
             </thead>
             <tbody>
-              {rubricas.map(r => {
-                const desvio = Number(r.orcamento_interno) - (r.gasto ?? 0);
-                const cons = r.orcamento_interno > 0 ? ((r.gasto ?? 0) / Number(r.orcamento_interno)) * 100 : 0;
+              {consolidadoArr.map((r, i) => {
+                const total = r.orcInicial + r.adendas;
+                const desvio = total - r.gasto;
+                const cons = total > 0 ? (r.gasto / total) * 100 : 0;
                 return (
-                  <tr key={r.id} className="border-t border-border">
+                  <tr key={i} className="border-t border-border">
                     <td className="p-3 font-medium">{r.nome}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(r.orcamento_interno)}</td>
+                    <td className="p-3 text-right tabular-nums">{eur(r.orcInicial)}</td>
+                    <td className="p-3 text-right tabular-nums text-primary">{r.adendas > 0 ? `+${eur(r.adendas)}` : "—"}</td>
+                    <td className="p-3 text-right tabular-nums font-medium">{eur(total)}</td>
                     <td className="p-3 text-right tabular-nums">{eur(r.gasto)}</td>
                     <td className={`p-3 text-right tabular-nums ${desvio < 0 ? "text-danger" : "text-success"}`}>{eur(desvio)}</td>
                     <td className="p-3 text-right tabular-nums">{cons.toFixed(0)}%</td>
                   </tr>
                 );
               })}
-              {rubricas.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem rubricas.</td></tr>}
+              {consolidadoArr.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Sem rubricas.</td></tr>}
             </tbody>
-            {rubricas.length > 0 && (
+            {consolidadoArr.length > 0 && (
               <tfoot className="bg-muted/30 font-medium">
                 <tr>
                   <td className="p-3">Totais</td>
-                  <td className="p-3 text-right tabular-nums">{eur(totInterno)}</td>
-                  <td className="p-3 text-right tabular-nums">{eur(totGasto)}</td>
-                  <td className={`p-3 text-right tabular-nums ${totInterno - totGasto < 0 ? "text-danger" : "text-success"}`}>{eur(totInterno - totGasto)}</td>
-                  <td className="p-3 text-right tabular-nums">{totInterno > 0 ? ((totGasto / totInterno) * 100).toFixed(0) : 0}%</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totConsInicial)}</td>
+                  <td className="p-3 text-right tabular-nums text-primary">{totConsAdendas > 0 ? `+${eur(totConsAdendas)}` : "—"}</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totConsTotal)}</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totConsGasto)}</td>
+                  <td className={`p-3 text-right tabular-nums ${totConsTotal - totConsGasto < 0 ? "text-danger" : "text-success"}`}>{eur(totConsTotal - totConsGasto)}</td>
+                  <td className="p-3 text-right tabular-nums">{totConsTotal > 0 ? ((totConsGasto / totConsTotal) * 100).toFixed(0) : 0}%</td>
                 </tr>
               </tfoot>
             )}
@@ -200,6 +235,50 @@ function Detalhe() {
         </div>
       </div>
 
+      {/* Trabalho extra */}
+      {adendasExtra.length > 0 && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+            <h2 className="font-medium">Trabalho extra</h2>
+            <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{adendasExtra.length}</span>
+          </div>
+          <div className="p-5 space-y-4">
+            {adendasExtra.map(a => {
+              const subs = adRubs.filter(r => r.adenda_id === a.id);
+              const intTot = subs.reduce((s, r) => s + Number(r.valor), 0);
+              return (
+                <div key={a.id} className="border border-border rounded-md">
+                  <div className="p-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium">{a.descricao}</div>
+                      <div className="text-xs text-muted-foreground">{a.data}</div>
+                    </div>
+                    <div className="text-sm text-primary tabular-nums whitespace-nowrap">Valor cliente: {eur(a.valor_cliente)}</div>
+                  </div>
+                  {subs.length > 0 && (
+                    <table className="w-full text-sm border-t border-border">
+                      <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                        <tr><th className="text-left p-2">Rubrica</th><th className="text-right p-2">Orç. interno</th></tr>
+                      </thead>
+                      <tbody>
+                        {subs.map(s => (
+                          <tr key={s.id} className="border-t border-border">
+                            <td className="p-2">{s.nome}</td>
+                            <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-muted/30 font-medium">
+                        <tr><td className="p-2">Total interno</td><td className="p-2 text-right tabular-nums">{eur(intTot)}</td></tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Adendas */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
@@ -225,7 +304,12 @@ function Detalhe() {
                 <div className="flex items-start justify-between p-3 gap-3">
                   <div className="min-w-0">
                     <div className="text-xs text-muted-foreground">{a.data}</div>
-                    <div className="font-medium">{a.descricao}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      {a.descricao}
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${a.tipo === "principal" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                        {a.tipo === "principal" ? "Incluída no principal" : "Trabalho extra"}
+                      </span>
+                    </div>
                     <div className="mt-1 text-sm text-primary tabular-nums">Valor cliente: {eur(a.valor_cliente)}</div>
                   </div>
                   {isAdmin && podeAdenda && (
@@ -342,6 +426,7 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
   const [descricao, setDescricao] = useState(adenda?.descricao ?? "");
   const [data, setData] = useState(adenda?.data ?? new Date().toISOString().slice(0, 10));
   const [vc, setVc] = useState(adenda ? String(adenda.valor_cliente) : "0");
+  const [tipo, setTipo] = useState<"extra" | "principal">(adenda?.tipo ?? "extra");
   const [linhas, setLinhas] = useState<{ nome: string; valor: string }[]>([{ nome: "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -373,12 +458,12 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
     if (!descricao) { toast.error("Indique a descrição"); return; }
     let adId = adenda?.id;
     if (isEdit && adId) {
-      const { error } = await supabase.from("adendas").update({ descricao, data, valor_cliente: valorCli }).eq("id", adId);
+      const { error } = await supabase.from("adendas").update({ descricao, data, valor_cliente: valorCli, tipo }).eq("id", adId);
       if (error) { toast.error(error.message); return; }
       await supabase.from("adenda_rubricas").delete().eq("adenda_id", adId);
     } else {
       const { data: ad, error } = await supabase.from("adendas").insert({
-        obra_id: obraId, descricao, data, valor_cliente: valorCli,
+        obra_id: obraId, descricao, data, valor_cliente: valorCli, tipo,
       }).select("id").single();
       if (error || !ad) { toast.error(error?.message ?? "Erro"); return; }
       adId = ad.id;
@@ -406,6 +491,29 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
           <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
           <Field label="Valor cliente (€)"><input type="number" step="0.01" value={vc} onChange={e => setVc(e.target.value)} className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" /></Field>
         </div>
+
+        <Field label="Tipo de adenda">
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { v: "extra", t: "Trabalho extra", s: "Aparece separado na obra" },
+              { v: "principal", t: "Incluir no principal", s: "Junta às rubricas do orçamento" },
+            ] as const).map(opt => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setTipo(opt.v)}
+                className={`text-left border rounded-md px-3 py-2 text-sm transition-colors ${
+                  tipo === opt.v
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="font-medium">{opt.t}</div>
+                <div className="text-xs opacity-80">{opt.s}</div>
+              </button>
+            ))}
+          </div>
+        </Field>
 
         <div className="space-y-2">
           <div className="text-sm font-medium">Rubricas internas</div>
