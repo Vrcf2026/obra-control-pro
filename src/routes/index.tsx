@@ -124,13 +124,14 @@ function Dashboard() {
   );
 }
 
-function Card({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: "success" | "danger" }) {
+function Card({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: "success" | "danger" | "warning" }) {
+  const accentCls = accent === "success" ? "text-success" : accent === "danger" ? "text-danger" : accent === "warning" ? "text-warning" : "";
   return (
     <div className="bg-card border border-border rounded-lg p-5">
       <div className="flex items-center justify-between text-muted-foreground">
         <span className="text-sm">{label}</span>{icon}
       </div>
-      <div className={`mt-2 text-2xl font-semibold tabular-nums ${accent === "success" ? "text-success" : accent === "danger" ? "text-danger" : ""}`}>{value}</div>
+      <div className={`mt-2 text-2xl font-semibold tabular-nums ${accentCls}`}>{value}</div>
     </div>
   );
 }
