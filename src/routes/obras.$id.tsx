@@ -40,6 +40,7 @@ function Detalhe() {
   const [adRubs, setAdRubs] = useState<AdendaRub[]>([]);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
   const [showAdenda, setShowAdenda] = useState(false);
+  const [editAdenda, setEditAdenda] = useState<Adenda | null>(null);
   const [showDespesa, setShowDespesa] = useState(false);
   const [showFatura, setShowFatura] = useState(false);
 
