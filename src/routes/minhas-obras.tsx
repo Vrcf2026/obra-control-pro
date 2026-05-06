@@ -5,7 +5,7 @@ import { Protected } from "@/components/Protected";
 import { estadoLabel, estadoColor } from "@/lib/format";
 import { ChevronRight } from "lucide-react";
 
-export const Route = createFileRoute("/encarregado")({
+export const Route = createFileRoute("/minhas-obras")({
   component: () => <Protected><Encarregado /></Protected>,
 });
 
