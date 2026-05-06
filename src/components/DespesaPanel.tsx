@@ -2,26 +2,53 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { eur } from "@/lib/format";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface Rubrica { id: string; nome: string; origem: string }
 interface Linha { rubrica_id: string; valor: string }
+interface Padrao { id: string; nome: string }
 
-export function DespesaPanel({ obraId, rubricas, onClose, onSaved }: {
+const CUSTOM_TOKEN = "__custom__";
+
+export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved }: {
   obraId: string; rubricas: Rubrica[]; onClose: () => void; onSaved: () => void;
 }) {
   const { user } = useAuth();
+  const [rubricas, setRubricas] = useState<Rubrica[]>(rubricasInit);
+  const [padroes, setPadroes] = useState<Padrao[]>([]);
+  const [customForLine, setCustomForLine] = useState<number | null>(null);
+  const [customDraft, setCustomDraft] = useState("");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [fornecedor, setFornecedor] = useState("");
   const [descricao, setDescricao] = useState("");
   const [linhas, setLinhas] = useState<Linha[]>([{ rubrica_id: rubricas[0]?.id ?? "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  useEffect(() => {
+    supabase.from("rubricas_padrao").select("id,nome").eq("ativo", true).order("ordem").then(({ data }) => {
+      setPadroes((data ?? []) as Padrao[]);
+    });
+  }, []);
+
   // Group rubricas by origem for optgroup
   const grupos = rubricas.reduce<Record<string, Rubrica[]>>((acc, r) => {
     (acc[r.origem] ||= []).push(r); return acc;
   }, {});
+
+  async function criarPersonalizada(i: number, nome: string) {
+    const trimmed = nome.trim();
+    if (!trimmed) return;
+    const { data: nova, error } = await supabase
+      .from("rubricas")
+      .insert({ obra_id: obraId, nome: trimmed, orcamento_interno: 0 })
+      .select("id,nome").single();
+    if (error || !nova) { toast.error(error?.message ?? "Erro"); return; }
+    const novaRub: Rubrica = { id: nova.id, nome: nova.nome, origem: "Orçamento" };
+    setRubricas(rs => [...rs, novaRub]);
+    setLinha(i, { rubrica_id: nova.id });
+    setCustomForLine(null); setCustomDraft("");
+  }
 
   function setLinha(i: number, patch: Partial<Linha>) {
     setLinhas(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
@@ -81,14 +108,40 @@ export function DespesaPanel({ obraId, rubricas, onClose, onSaved }: {
           <div className="text-sm font-medium">Linhas</div>
           {linhas.map((l, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <select value={l.rubrica_id} onChange={e => setLinha(i, { rubrica_id: e.target.value })}
-                className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1">
-                {Object.entries(grupos).map(([origem, rubs]) => (
-                  <optgroup key={origem} label={origem}>
-                    {rubs.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
-                  </optgroup>
-                ))}
-              </select>
+              {customForLine === i ? (
+                <>
+                  <input
+                    autoFocus
+                    list={`padroes-${i}`}
+                    value={customDraft}
+                    onChange={e => setCustomDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); criarPersonalizada(i, customDraft); } if (e.key === "Escape") { setCustomForLine(null); setCustomDraft(""); } }}
+                    placeholder="Nome da nova rubrica..."
+                    className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1"
+                  />
+                  <datalist id={`padroes-${i}`}>
+                    {padroes.map(p => <option key={p.id} value={p.nome} />)}
+                  </datalist>
+                  <button type="button" onClick={() => criarPersonalizada(i, customDraft)} className="text-success p-1" title="Confirmar"><Check className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => { setCustomForLine(null); setCustomDraft(""); }} className="text-muted-foreground hover:text-danger p-1" title="Cancelar"><X className="w-4 h-4" /></button>
+                </>
+              ) : (
+                <select value={l.rubrica_id}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === CUSTOM_TOKEN) { setCustomDraft(""); setCustomForLine(i); return; }
+                    setLinha(i, { rubrica_id: v });
+                  }}
+                  className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1">
+                  {Object.entries(grupos).map(([origem, rubs]) => (
+                    <optgroup key={origem} label={origem}>
+                      {rubs.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
+                    </optgroup>
+                  ))}
+                  <option disabled>──────────</option>
+                  <option value={CUSTOM_TOKEN}>Nova rubrica personalizada...</option>
+                </select>
+              )}
               <input ref={el => { valorRefs.current[i] = el; }}
                 type="number" step="0.01" placeholder="0,00" value={l.valor}
                 onChange={e => setLinha(i, { valor: e.target.value })}

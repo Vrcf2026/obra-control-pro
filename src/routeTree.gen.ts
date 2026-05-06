@@ -16,6 +16,7 @@ import { Route as EncarregadoRouteImport } from './routes/encarregado'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObrasIdRouteImport } from './routes/obras.$id'
 import { Route as GestaoUtilizadoresRouteImport } from './routes/gestao.utilizadores'
+import { Route as GestaoRubricasRouteImport } from './routes/gestao.rubricas'
 import { Route as GestaoObrasIdRouteImport } from './routes/gestao_.obras.$id'
 
 const RelatoriosRoute = RelatoriosRouteImport.update({
@@ -53,6 +54,11 @@ const GestaoUtilizadoresRoute = GestaoUtilizadoresRouteImport.update({
   path: '/utilizadores',
   getParentRoute: () => GestaoRoute,
 } as any)
+const GestaoRubricasRoute = GestaoRubricasRouteImport.update({
+  id: '/rubricas',
+  path: '/rubricas',
+  getParentRoute: () => GestaoRoute,
+} as any)
 const GestaoObrasIdRoute = GestaoObrasIdRouteImport.update({
   id: '/gestao_/obras/$id',
   path: '/gestao/obras/$id',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/gestao': typeof GestaoRouteWithChildren
   '/login': typeof LoginRoute
   '/relatorios': typeof RelatoriosRoute
+  '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
   '/gestao/obras/$id': typeof GestaoObrasIdRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/gestao': typeof GestaoRouteWithChildren
   '/login': typeof LoginRoute
   '/relatorios': typeof RelatoriosRoute
+  '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
   '/gestao/obras/$id': typeof GestaoObrasIdRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/gestao': typeof GestaoRouteWithChildren
   '/login': typeof LoginRoute
   '/relatorios': typeof RelatoriosRoute
+  '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
   '/gestao_/obras/$id': typeof GestaoObrasIdRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/gestao'
     | '/login'
     | '/relatorios'
+    | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
     | '/gestao/obras/$id'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/gestao'
     | '/login'
     | '/relatorios'
+    | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
     | '/gestao/obras/$id'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/gestao'
     | '/login'
     | '/relatorios'
+    | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
     | '/gestao_/obras/$id'
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoUtilizadoresRouteImport
       parentRoute: typeof GestaoRoute
     }
+    '/gestao/rubricas': {
+      id: '/gestao/rubricas'
+      path: '/rubricas'
+      fullPath: '/gestao/rubricas'
+      preLoaderRoute: typeof GestaoRubricasRouteImport
+      parentRoute: typeof GestaoRoute
+    }
     '/gestao_/obras/$id': {
       id: '/gestao_/obras/$id'
       path: '/gestao/obras/$id'
@@ -195,10 +214,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface GestaoRouteChildren {
+  GestaoRubricasRoute: typeof GestaoRubricasRoute
   GestaoUtilizadoresRoute: typeof GestaoUtilizadoresRoute
 }
 
 const GestaoRouteChildren: GestaoRouteChildren = {
+  GestaoRubricasRoute: GestaoRubricasRoute,
   GestaoUtilizadoresRoute: GestaoUtilizadoresRoute,
 }
 
