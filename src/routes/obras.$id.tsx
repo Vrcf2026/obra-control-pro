@@ -103,7 +103,8 @@ function Detalhe() {
 
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
 
-  const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0);
+  const totAvulsas = avulsas.reduce((s, x) => s + x.valor, 0);
+  const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0) + totAvulsas;
   const totInternoBase = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adIntPorAdenda = (adId: string) =>
     adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
