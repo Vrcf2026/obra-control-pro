@@ -8,7 +8,6 @@ const allNav = [
   { to: "/minhas-obras", label: "As minhas obras", icon: HardHat, roles: ["encarregado", "admin"] as const },
   { to: "/relatorios", label: "Relatórios", icon: BarChart2, roles: ["admin", "gestor"] as const },
   { to: "/gestao", label: "Gestão", icon: Settings, roles: ["admin"] as const, hasSubpages: true },
-  { to: "/gestao/utilizadores", label: "Utilizadores", icon: Users, roles: ["admin"] as const },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
