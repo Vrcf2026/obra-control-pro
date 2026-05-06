@@ -409,7 +409,7 @@ function Detalhe() {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Faturação</h2>
-          {isAdminGestor && podeFatura && (
+          {isAdmin && podeFatura && (
             <button
               onClick={() => setShowFatura(true)}
               className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1"
