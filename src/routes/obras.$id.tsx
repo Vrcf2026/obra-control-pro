@@ -180,7 +180,7 @@ function Detalhe() {
         )}
       </div>
 
-      {/* Rubricas */}
+      {/* Rubricas consolidadas */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Rubricas</h2>
@@ -191,36 +191,43 @@ function Detalhe() {
             <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
               <tr>
                 <th className="text-left p-3">Nome</th>
-                <th className="text-right p-3">Orç. interno</th>
+                <th className="text-right p-3">Orç. inicial</th>
+                <th className="text-right p-3">+ Adendas</th>
+                <th className="text-right p-3">Orç. total</th>
                 <th className="text-right p-3">Gasto real</th>
                 <th className="text-right p-3">Desvio</th>
                 <th className="text-right p-3">% Cons.</th>
               </tr>
             </thead>
             <tbody>
-              {rubricas.map(r => {
-                const desvio = Number(r.orcamento_interno) - (r.gasto ?? 0);
-                const cons = r.orcamento_interno > 0 ? ((r.gasto ?? 0) / Number(r.orcamento_interno)) * 100 : 0;
+              {consolidadoArr.map((r, i) => {
+                const total = r.orcInicial + r.adendas;
+                const desvio = total - r.gasto;
+                const cons = total > 0 ? (r.gasto / total) * 100 : 0;
                 return (
-                  <tr key={r.id} className="border-t border-border">
+                  <tr key={i} className="border-t border-border">
                     <td className="p-3 font-medium">{r.nome}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(r.orcamento_interno)}</td>
+                    <td className="p-3 text-right tabular-nums">{eur(r.orcInicial)}</td>
+                    <td className="p-3 text-right tabular-nums text-primary">{r.adendas > 0 ? `+${eur(r.adendas)}` : "—"}</td>
+                    <td className="p-3 text-right tabular-nums font-medium">{eur(total)}</td>
                     <td className="p-3 text-right tabular-nums">{eur(r.gasto)}</td>
                     <td className={`p-3 text-right tabular-nums ${desvio < 0 ? "text-danger" : "text-success"}`}>{eur(desvio)}</td>
                     <td className="p-3 text-right tabular-nums">{cons.toFixed(0)}%</td>
                   </tr>
                 );
               })}
-              {rubricas.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem rubricas.</td></tr>}
+              {consolidadoArr.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Sem rubricas.</td></tr>}
             </tbody>
-            {rubricas.length > 0 && (
+            {consolidadoArr.length > 0 && (
               <tfoot className="bg-muted/30 font-medium">
                 <tr>
                   <td className="p-3">Totais</td>
-                  <td className="p-3 text-right tabular-nums">{eur(totInterno)}</td>
-                  <td className="p-3 text-right tabular-nums">{eur(totGasto)}</td>
-                  <td className={`p-3 text-right tabular-nums ${totInterno - totGasto < 0 ? "text-danger" : "text-success"}`}>{eur(totInterno - totGasto)}</td>
-                  <td className="p-3 text-right tabular-nums">{totInterno > 0 ? ((totGasto / totInterno) * 100).toFixed(0) : 0}%</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totConsInicial)}</td>
+                  <td className="p-3 text-right tabular-nums text-primary">{totConsAdendas > 0 ? `+${eur(totConsAdendas)}` : "—"}</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totConsTotal)}</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totConsGasto)}</td>
+                  <td className={`p-3 text-right tabular-nums ${totConsTotal - totConsGasto < 0 ? "text-danger" : "text-success"}`}>{eur(totConsTotal - totConsGasto)}</td>
+                  <td className="p-3 text-right tabular-nums">{totConsTotal > 0 ? ((totConsGasto / totConsTotal) * 100).toFixed(0) : 0}%</td>
                 </tr>
               </tfoot>
             )}
@@ -228,6 +235,50 @@ function Detalhe() {
         </div>
       </div>
 
+      {/* Trabalho extra */}
+      {adendasExtra.length > 0 && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+            <h2 className="font-medium">Trabalho extra</h2>
+            <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{adendasExtra.length}</span>
+          </div>
+          <div className="p-5 space-y-4">
+            {adendasExtra.map(a => {
+              const subs = adRubs.filter(r => r.adenda_id === a.id);
+              const intTot = subs.reduce((s, r) => s + Number(r.valor), 0);
+              return (
+                <div key={a.id} className="border border-border rounded-md">
+                  <div className="p-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium">{a.descricao}</div>
+                      <div className="text-xs text-muted-foreground">{a.data}</div>
+                    </div>
+                    <div className="text-sm text-primary tabular-nums whitespace-nowrap">Valor cliente: {eur(a.valor_cliente)}</div>
+                  </div>
+                  {subs.length > 0 && (
+                    <table className="w-full text-sm border-t border-border">
+                      <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                        <tr><th className="text-left p-2">Rubrica</th><th className="text-right p-2">Orç. interno</th></tr>
+                      </thead>
+                      <tbody>
+                        {subs.map(s => (
+                          <tr key={s.id} className="border-t border-border">
+                            <td className="p-2">{s.nome}</td>
+                            <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-muted/30 font-medium">
+                        <tr><td className="p-2">Total interno</td><td className="p-2 text-right tabular-nums">{eur(intTot)}</td></tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Adendas */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
