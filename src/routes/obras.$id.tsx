@@ -50,20 +50,24 @@ function Detalhe() {
     const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }] = await Promise.all([
       supabase.from("obras").select("*").eq("id", id).maybeSingle(),
       supabase.from("rubricas").select("*").eq("obra_id", id).order("created_at"),
-      supabase.from("lancamentos").select("rubrica_id,valor").eq("obra_id", id),
+      supabase.from("lancamentos").select("rubrica_id,adenda_rubrica_id,valor").eq("obra_id", id),
       supabase.from("adendas").select("*").eq("obra_id", id).order("data", { ascending: false }),
       supabase.from("faturas_emitidas").select("*").eq("obra_id", id).order("data", { ascending: false }),
     ]);
     setObra(o as unknown as Obra | null);
-    const gastos = new Map<string, number>();
-    (l ?? []).forEach(x => gastos.set(x.rubrica_id, (gastos.get(x.rubrica_id) ?? 0) + Number(x.valor)));
-    setRubricas((r ?? []).map(x => ({ id: x.id, nome: x.nome, orcamento_interno: Number(x.orcamento_interno), gasto: gastos.get(x.id) ?? 0 })));
+    const gastosRub = new Map<string, number>();
+    const gastosAd = new Map<string, number>();
+    (l ?? []).forEach((x: any) => {
+      if (x.rubrica_id) gastosRub.set(x.rubrica_id, (gastosRub.get(x.rubrica_id) ?? 0) + Number(x.valor));
+      if (x.adenda_rubrica_id) gastosAd.set(x.adenda_rubrica_id, (gastosAd.get(x.adenda_rubrica_id) ?? 0) + Number(x.valor));
+    });
+    setRubricas((r ?? []).map(x => ({ id: x.id, nome: x.nome, orcamento_interno: Number(x.orcamento_interno), gasto: gastosRub.get(x.id) ?? 0 })));
     const adArr = (a ?? []) as Adenda[];
     setAdendas(adArr);
     setFaturas(((f ?? []) as Fatura[]).map(x => ({ ...x, valor: Number(x.valor) })));
     if (adArr.length > 0) {
       const { data: ar } = await supabase.from("adenda_rubricas").select("*").in("adenda_id", adArr.map(x => x.id));
-      setAdRubs(((ar ?? []) as AdendaRub[]).map(x => ({ ...x, valor: Number(x.valor) })));
+      setAdRubs(((ar ?? []) as AdendaRub[]).map(x => ({ ...x, valor: Number(x.valor), gasto: gastosAd.get(x.id) ?? 0 })));
     } else {
       setAdRubs([]);
     }
