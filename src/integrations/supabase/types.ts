@@ -133,6 +133,7 @@ export type Database = {
           obra_id: string
           registado_por: string | null
           rubrica_id: string | null
+          rubrica_nome: string | null
           valor: number
         }
         Insert: {
@@ -145,6 +146,7 @@ export type Database = {
           obra_id: string
           registado_por?: string | null
           rubrica_id?: string | null
+          rubrica_nome?: string | null
           valor?: number
         }
         Update: {
@@ -157,6 +159,7 @@ export type Database = {
           obra_id?: string
           registado_por?: string | null
           rubrica_id?: string | null
+          rubrica_nome?: string | null
           valor?: number
         }
         Relationships: [
