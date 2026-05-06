@@ -50,13 +50,15 @@ function Dashboard() {
   const summary = useMemo(() => {
     const ativas = rows.filter(r => ["adjudicada", "em_curso"].includes(r.estado)).length;
     const margem = rows.reduce((s, r) => s + ((r.orc_cliente + r.ad_cli) - (r.orc_interno + r.ad_int)), 0);
-    const risco = rows.filter(r => {
+    let atencao = 0, risco = 0;
+    rows.forEach(r => {
       const fat = r.orc_cliente + r.ad_cli;
       const m = fat - (r.orc_interno + r.ad_int);
       const pct = fat > 0 ? (m / fat) * 100 : 0;
-      return pct < 0;
-    }).length;
-    return { ativas, margem, risco };
+      if (pct < 0) risco++;
+      else if (pct < 10) atencao++;
+    });
+    return { ativas, margem, atencao, risco };
   }, [rows]);
 
   return (
