@@ -458,12 +458,12 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
     if (!descricao) { toast.error("Indique a descrição"); return; }
     let adId = adenda?.id;
     if (isEdit && adId) {
-      const { error } = await supabase.from("adendas").update({ descricao, data, valor_cliente: valorCli }).eq("id", adId);
+      const { error } = await supabase.from("adendas").update({ descricao, data, valor_cliente: valorCli, tipo }).eq("id", adId);
       if (error) { toast.error(error.message); return; }
       await supabase.from("adenda_rubricas").delete().eq("adenda_id", adId);
     } else {
       const { data: ad, error } = await supabase.from("adendas").insert({
-        obra_id: obraId, descricao, data, valor_cliente: valorCli,
+        obra_id: obraId, descricao, data, valor_cliente: valorCli, tipo,
       }).select("id").single();
       if (error || !ad) { toast.error(error?.message ?? "Erro"); return; }
       adId = ad.id;
