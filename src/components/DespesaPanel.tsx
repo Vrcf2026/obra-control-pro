@@ -108,14 +108,40 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
           <div className="text-sm font-medium">Linhas</div>
           {linhas.map((l, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <select value={l.rubrica_id} onChange={e => setLinha(i, { rubrica_id: e.target.value })}
-                className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1">
-                {Object.entries(grupos).map(([origem, rubs]) => (
-                  <optgroup key={origem} label={origem}>
-                    {rubs.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
-                  </optgroup>
-                ))}
-              </select>
+              {customForLine === i ? (
+                <>
+                  <input
+                    autoFocus
+                    list={`padroes-${i}`}
+                    value={customDraft}
+                    onChange={e => setCustomDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); criarPersonalizada(i, customDraft); } if (e.key === "Escape") { setCustomForLine(null); setCustomDraft(""); } }}
+                    placeholder="Nome da nova rubrica..."
+                    className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1"
+                  />
+                  <datalist id={`padroes-${i}`}>
+                    {padroes.map(p => <option key={p.id} value={p.nome} />)}
+                  </datalist>
+                  <button type="button" onClick={() => criarPersonalizada(i, customDraft)} className="text-success p-1" title="Confirmar"><Check className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => { setCustomForLine(null); setCustomDraft(""); }} className="text-muted-foreground hover:text-danger p-1" title="Cancelar"><X className="w-4 h-4" /></button>
+                </>
+              ) : (
+                <select value={l.rubrica_id}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === CUSTOM_TOKEN) { setCustomDraft(""); setCustomForLine(i); return; }
+                    setLinha(i, { rubrica_id: v });
+                  }}
+                  className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1">
+                  {Object.entries(grupos).map(([origem, rubs]) => (
+                    <optgroup key={origem} label={origem}>
+                      {rubs.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
+                    </optgroup>
+                  ))}
+                  <option disabled>──────────</option>
+                  <option value={CUSTOM_TOKEN}>Nova rubrica personalizada...</option>
+                </select>
+              )}
               <input ref={el => { valorRefs.current[i] = el; }}
                 type="number" step="0.01" placeholder="0,00" value={l.valor}
                 onChange={e => setLinha(i, { valor: e.target.value })}
