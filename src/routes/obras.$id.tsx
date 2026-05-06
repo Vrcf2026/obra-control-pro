@@ -491,17 +491,23 @@ function Detalhe() {
               {faturas.map(f => (
                 <tr key={f.id} className="border-t border-border">
                   <td className="p-3 text-muted-foreground">{f.data}</td>
-                  <td className="p-3 font-medium">{f.num_fatura}</td>
+                  <td className="p-3 font-medium">
+                    {isAdmin ? (
+                      <button onClick={() => setEditFat(f)} className="hover:underline text-left">{f.num_fatura}</button>
+                    ) : f.num_fatura}
+                  </td>
                   <td className="p-3">{f.descricao || "—"}</td>
                   <td className="p-3 text-right tabular-nums">{eur(f.valor)}</td>
                   {isAdmin && (
                     <td className="p-3 text-right">
-                      <button
-                        onClick={() => setDelFatId(f.id)}
-                        className="text-muted-foreground hover:text-danger"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button onClick={() => setEditFat(f)} className="text-muted-foreground hover:text-foreground" title="Editar">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setDelFatId(f.id)} className="text-muted-foreground hover:text-danger" title="Apagar">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   )}
                 </tr>
