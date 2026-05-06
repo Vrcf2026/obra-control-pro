@@ -476,6 +476,73 @@ function Detalhe() {
         />
       )}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
+
+      {isAdminGestor && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setLogOpen(o => !o)}
+            className="w-full px-5 py-3 border-b border-border flex items-center justify-between text-left hover:bg-muted/40"
+          >
+            <h2 className="font-medium">Histórico de estados</h2>
+            {logOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </button>
+          {logOpen && (
+            <div className="overflow-x-auto">
+              {estadoLog.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-sm">Sem alterações registadas.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="text-left p-3">Data e hora</th>
+                      <th className="text-left p-3">Alteração</th>
+                      <th className="text-left p-3">Alterado por</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estadoLog.map(l => (
+                      <tr key={l.id} className="border-t border-border">
+                        <td className="p-3 text-muted-foreground tabular-nums">{new Date(l.alterado_em).toLocaleString("pt-PT")}</td>
+                        <td className="p-3">
+                          {l.estado_anterior ? estadoLabel[l.estado_anterior] ?? l.estado_anterior : "—"}
+                          {" → "}
+                          <span className="font-medium">{estadoLabel[l.estado_novo] ?? l.estado_novo}</span>
+                        </td>
+                        <td className="p-3">{l.nome ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <AlertDialog open={!!delFatId} onOpenChange={o => !o && setDelFatId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar lançamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres apagar este lançamento? Esta acção não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-danger text-white hover:bg-danger/90"
+              onClick={async () => {
+                if (!delFatId) return;
+                const { error } = await supabase.from("faturas_emitidas").delete().eq("id", delFatId);
+                setDelFatId(null);
+                if (error) toast.error(error.message); else { toast.success("Lançamento apagado"); load(); }
+              }}
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
