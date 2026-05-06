@@ -42,16 +42,19 @@ function Relatorios() {
 
   async function load() {
     setLoading(true);
-    const [{ data: o }, { data: r }, { data: l }, { data: a }] = await Promise.all([
+    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: ar }] = await Promise.all([
       supabase.from("obras").select("*").order("nome"),
       supabase.from("rubricas").select("*"),
       supabase.from("lancamentos").select("*"),
       supabase.from("adendas").select("*"),
+      supabase.from("adenda_rubricas").select("adenda_id,valor"),
     ]);
+    const intMap = new Map<string, number>();
+    ((ar ?? []) as AdRub[]).forEach(x => intMap.set(x.adenda_id, (intMap.get(x.adenda_id) ?? 0) + Number(x.valor)));
     setObras((o ?? []) as Obra[]);
     setRubricas((r ?? []) as Rubrica[]);
     setLancamentos(((l ?? []) as Lanc[]).map(x => ({ ...x, valor: Number(x.valor) })));
-    setAdendas(((a ?? []) as Adenda[]).map(x => ({ ...x, valor_cliente: Number(x.valor_cliente), valor_interno: Number(x.valor_interno) })));
+    setAdendas(((a ?? []) as any[]).map(x => ({ ...x, valor_cliente: Number(x.valor_cliente), valor_interno: intMap.get(x.id) ?? 0 })) as Adenda[]);
     setLoading(false);
   }
 
