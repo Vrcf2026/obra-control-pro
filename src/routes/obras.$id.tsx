@@ -19,13 +19,14 @@ interface Obra {
   data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number;
 }
 
-// Regras por estado
+// Regras por estado (visibilidade)
 const ALLOW = {
   despesas: ["adjudicada", "em_curso"],
   adendas: ["adjudicada", "em_curso", "concluida"],
   editar: ["orcamentacao", "adjudicada", "em_curso"],
   faturas: ["adjudicada", "em_curso", "concluida"],
 };
+const ESTADOS = ["orcamentacao", "adjudicada", "em_curso", "concluida", "faturada"] as const;
 
 function Detalhe() {
   const { id } = Route.useParams();
