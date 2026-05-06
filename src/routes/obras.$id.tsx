@@ -80,6 +80,20 @@ function Detalhe() {
     } else {
       setAdRubs([]);
     }
+    if (isAdminGestor) loadLog();
+  }
+
+  async function loadLog() {
+    const { data: logs } = await supabase.from("obra_estado_log" as any)
+      .select("*").eq("obra_id", id).order("alterado_em", { ascending: false });
+    const arr = (logs ?? []) as any[];
+    const ids = Array.from(new Set(arr.map(x => x.alterado_por).filter(Boolean)));
+    const nomes: Record<string, string> = {};
+    if (ids.length) {
+      const { data: profs } = await supabase.from("profiles").select("id,nome").in("id", ids);
+      (profs ?? []).forEach((p: any) => { nomes[p.id] = p.nome; });
+    }
+    setEstadoLog(arr.map(x => ({ ...x, nome: x.alterado_por ? nomes[x.alterado_por] : undefined })));
   }
 
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
