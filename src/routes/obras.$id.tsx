@@ -105,13 +105,26 @@ function Detalhe() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-1 rounded-md font-medium w-fit ${estadoColor[obra.estado]}`}>{estadoLabel[obra.estado]}</span>
-            {canSpendRole && (
+            {isAdmin ? (
+              <select
+                value={obra.estado}
+                onChange={async e => {
+                  const novo = e.target.value;
+                  const { error } = await supabase.from("obras").update({ estado: novo as any }).eq("id", obra.id);
+                  if (error) toast.error(error.message);
+                  else { toast.success("Estado actualizado"); load(); }
+                }}
+                className="text-sm border border-input rounded-md px-2 py-1 bg-background"
+              >
+                {ESTADOS.map(e => <option key={e} value={e}>{estadoLabel[e]}</option>)}
+              </select>
+            ) : (
+              <span className={`text-xs px-2 py-1 rounded-md font-medium w-fit ${estadoColor[obra.estado]}`}>{estadoLabel[obra.estado]}</span>
+            )}
+            {canSpendRole && podeDespesa && (
               <button
                 onClick={() => setShowDespesa(true)}
-                disabled={!podeDespesa}
-                title={podeDespesa ? "" : `Não é possível registar despesas no estado "${estadoLabel[obra.estado]}"`}
-                className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
               >
                 <Receipt className="w-4 h-4" /> Registar despesa
               </button>
