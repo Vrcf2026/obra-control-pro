@@ -304,7 +304,12 @@ function Detalhe() {
                 <div className="flex items-start justify-between p-3 gap-3">
                   <div className="min-w-0">
                     <div className="text-xs text-muted-foreground">{a.data}</div>
-                    <div className="font-medium">{a.descricao}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      {a.descricao}
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${a.tipo === "principal" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                        {a.tipo === "principal" ? "Incluída no principal" : "Trabalho extra"}
+                      </span>
+                    </div>
                     <div className="mt-1 text-sm text-primary tabular-nums">Valor cliente: {eur(a.valor_cliente)}</div>
                   </div>
                   {isAdmin && podeAdenda && (
