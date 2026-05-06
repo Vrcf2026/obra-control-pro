@@ -410,7 +410,20 @@ function Detalhe() {
       </div>
 
       {showAdenda && <AdendaPanel obraId={id} adenda={editAdenda} onClose={() => { setShowAdenda(false); setEditAdenda(null); }} onSaved={() => { setShowAdenda(false); setEditAdenda(null); load(); }} />}
-      {showDespesa && <DespesaPanel obraId={id} rubricas={rubricas} onClose={() => setShowDespesa(false)} onSaved={() => { setShowDespesa(false); load(); }} />}
+      {showDespesa && (
+        <DespesaPanel
+          obraId={id}
+          rubricas={[
+            ...rubricas.map(r => ({ id: r.id, nome: r.nome, origem: "Orçamento" })),
+            ...adRubs.map(r => {
+              const ad = adendas.find(a => a.id === r.adenda_id);
+              return { id: r.id, nome: r.nome, origem: `Adenda: ${ad?.descricao ?? ""}` };
+            }),
+          ]}
+          onClose={() => setShowDespesa(false)}
+          onSaved={() => { setShowDespesa(false); load(); }}
+        />
+      )}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
     </div>
   );
