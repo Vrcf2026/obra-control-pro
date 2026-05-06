@@ -320,6 +320,20 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
       styles: { fontSize: 9 },
     });
 
+    // Despesas avulsas
+    const avulsas = lancObra.filter(l => !l.rubrica_id && !l.adenda_rubrica_id);
+    if (avulsas.length > 0) {
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 6,
+        head: [["Data", "Fornecedor", "Descrição", "Rubrica avulsa", "Valor"]],
+        body: avulsas.map(l => [l.data, l.fornecedor ?? "—", l.descricao, l.rubrica_nome ?? "—", eur(l.valor)]),
+        foot: [["", "", "", "Total", eur(avulsas.reduce((s, l) => s + l.valor, 0))]],
+        headStyles: { fillColor: [245, 158, 11] },
+        footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: "bold" },
+        styles: { fontSize: 9 },
+      });
+    }
+
     // Adendas
     if (adObra.length > 0) {
       autoTable(doc, {
