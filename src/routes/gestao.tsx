@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
 import { Plus, Users, Edit, X } from "lucide-react";
-import { estadoLabel, estadoColor, eur } from "@/lib/format";
+import { estadoLabel, eur } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gestao")({
@@ -53,7 +53,20 @@ function Gestao() {
               <tr key={o.id} className="border-t border-border">
                 <td className="p-3 font-medium">{o.nome}</td>
                 <td className="p-3 text-muted-foreground">{o.cliente}</td>
-                <td className="p-3"><span className={`text-xs px-2 py-1 rounded-md font-medium ${estadoColor[o.estado]}`}>{estadoLabel[o.estado]}</span></td>
+                <td className="p-3">
+                  <select
+                    value={o.estado}
+                    onChange={async e => {
+                      const novo = e.target.value;
+                      const { error } = await supabase.from("obras").update({ estado: novo as any }).eq("id", o.id);
+                      if (error) toast.error(error.message);
+                      else { toast.success("Estado actualizado"); load(); }
+                    }}
+                    className="text-xs border border-input rounded-md px-2 py-1 bg-background"
+                  >
+                    {Object.entries(estadoLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </td>
                 <td className="p-3 text-right tabular-nums">{eur(o.orcamento_cliente)}</td>
                 <td className="p-3 text-right space-x-2 whitespace-nowrap">
                   <button onClick={() => setAssignFor(o)} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">

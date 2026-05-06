@@ -50,13 +50,15 @@ function Dashboard() {
   const summary = useMemo(() => {
     const ativas = rows.filter(r => ["adjudicada", "em_curso"].includes(r.estado)).length;
     const margem = rows.reduce((s, r) => s + ((r.orc_cliente + r.ad_cli) - (r.orc_interno + r.ad_int)), 0);
-    const risco = rows.filter(r => {
+    let atencao = 0, risco = 0;
+    rows.forEach(r => {
       const fat = r.orc_cliente + r.ad_cli;
       const m = fat - (r.orc_interno + r.ad_int);
       const pct = fat > 0 ? (m / fat) * 100 : 0;
-      return pct < 0;
-    }).length;
-    return { ativas, margem, risco };
+      if (pct < 0) risco++;
+      else if (pct < 10) atencao++;
+    });
+    return { ativas, margem, atencao, risco };
   }, [rows]);
 
   return (
@@ -66,10 +68,11 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground">Visão global das obras</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card icon={<Briefcase className="w-5 h-5" />} label="Obras activas" value={String(summary.ativas)} />
         <Card icon={<TrendingUp className="w-5 h-5" />} label="Margem prevista total" value={eur(summary.margem)} accent={summary.margem >= 0 ? "success" : "danger"} />
-        <Card icon={<AlertTriangle className="w-5 h-5" />} label="Obras em risco" value={String(summary.risco)} accent={summary.risco > 0 ? "danger" : undefined} />
+        <Card icon={<AlertTriangle className="w-5 h-5" />} label="Em atenção" value={String(summary.atencao)} accent={summary.atencao > 0 ? "warning" : undefined} />
+        <Card icon={<AlertTriangle className="w-5 h-5" />} label="Em risco" value={String(summary.risco)} accent={summary.risco > 0 ? "danger" : undefined} />
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -121,13 +124,14 @@ function Dashboard() {
   );
 }
 
-function Card({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: "success" | "danger" }) {
+function Card({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: "success" | "danger" | "warning" }) {
+  const accentCls = accent === "success" ? "text-success" : accent === "danger" ? "text-danger" : accent === "warning" ? "text-warning" : "";
   return (
     <div className="bg-card border border-border rounded-lg p-5">
       <div className="flex items-center justify-between text-muted-foreground">
         <span className="text-sm">{label}</span>{icon}
       </div>
-      <div className={`mt-2 text-2xl font-semibold tabular-nums ${accent === "success" ? "text-success" : accent === "danger" ? "text-danger" : ""}`}>{value}</div>
+      <div className={`mt-2 text-2xl font-semibold tabular-nums ${accentCls}`}>{value}</div>
     </div>
   );
 }

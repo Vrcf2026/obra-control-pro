@@ -350,6 +350,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
 
     const ativas = linhas.filter(l => ["adjudicada", "em_curso"].includes(l.o.estado)).length;
     const margemTotal = linhas.reduce((s, l) => s + l.margem, 0);
+    const atencao = linhas.filter(l => l.pct >= 0 && l.pct < 10).length;
     const risco = linhas.filter(l => l.pct < 0).length;
 
     autoTable(doc, {
@@ -357,7 +358,8 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
       body: [
         ["Obras activas", String(ativas)],
         ["Margem total prevista", eur(margemTotal)],
-        ["Obras em risco", String(risco)],
+        ["Em atenção (margem 0–10%)", String(atencao)],
+        ["Em risco (margem negativa)", String(risco)],
       ],
       columnStyles: { 0: { cellWidth: 80, fontStyle: "bold" }, 1: { halign: "right" } },
     });
