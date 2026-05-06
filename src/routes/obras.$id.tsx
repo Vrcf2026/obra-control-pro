@@ -445,11 +445,7 @@ function Detalhe() {
                   {isAdmin && (
                     <td className="p-3 text-right">
                       <button
-                        onClick={async () => {
-                          if (!confirm("Apagar fatura?")) return;
-                          const { error } = await supabase.from("faturas_emitidas").delete().eq("id", f.id);
-                          if (error) toast.error(error.message); else { toast.success("Fatura apagada"); load(); }
-                        }}
+                        onClick={() => setDelFatId(f.id)}
                         className="text-muted-foreground hover:text-danger"
                       >
                         <Trash2 className="w-4 h-4" />
