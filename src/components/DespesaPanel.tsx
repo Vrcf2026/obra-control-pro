@@ -25,10 +25,30 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
   const [linhas, setLinhas] = useState<Linha[]>([{ rubrica_id: rubricas[0]?.id ?? "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  useEffect(() => {
+    supabase.from("rubricas_padrao").select("id,nome").eq("ativo", true).order("ordem").then(({ data }) => {
+      setPadroes((data ?? []) as Padrao[]);
+    });
+  }, []);
+
   // Group rubricas by origem for optgroup
   const grupos = rubricas.reduce<Record<string, Rubrica[]>>((acc, r) => {
     (acc[r.origem] ||= []).push(r); return acc;
   }, {});
+
+  async function criarPersonalizada(i: number, nome: string) {
+    const trimmed = nome.trim();
+    if (!trimmed) return;
+    const { data: nova, error } = await supabase
+      .from("rubricas")
+      .insert({ obra_id: obraId, nome: trimmed, orcamento_interno: 0 })
+      .select("id,nome").single();
+    if (error || !nova) { toast.error(error?.message ?? "Erro"); return; }
+    const novaRub: Rubrica = { id: nova.id, nome: nova.nome, origem: "Orçamento" };
+    setRubricas(rs => [...rs, novaRub]);
+    setLinha(i, { rubrica_id: nova.id });
+    setCustomForLine(null); setCustomDraft("");
+  }
 
   function setLinha(i: number, patch: Partial<Linha>) {
     setLinhas(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
