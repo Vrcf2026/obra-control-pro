@@ -116,6 +116,9 @@ function Detalhe() {
   const podeEditar = ALLOW.editar.includes(obra.estado);
   const podeFatura = ALLOW.faturas.includes(obra.estado);
 
+  const totFaturado = faturas.reduce((s, f) => s + Number(f.valor), 0);
+  const porFaturar = totalFaturavel - totFaturado;
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div>
