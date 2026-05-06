@@ -236,7 +236,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
     }
   }
 
-  function gerarRelatorioObra() {
+  async function gerarRelatorioObra() {
     const obra = obras.find(o => o.id === obraId);
     if (!obra) return;
     const doc = new jsPDF();
@@ -258,7 +258,12 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
     const rubObra = rubricas.filter(r => r.obra_id === obra.id);
     const lancObra = lancamentos.filter(l => l.obra_id === obra.id).sort((a, b) => a.data.localeCompare(b.data));
     const adCli = adObra.reduce((s, a) => s + a.valor_cliente, 0);
-    const adInt = adObra.reduce((s, a) => s + a.valor_interno, 0);
+    let adInt = 0;
+    if (adObra.length > 0) {
+      const { data: ar } = await supabase.from("adenda_rubricas").select("valor")
+        .in("adenda_id", adObra.map(a => a.id));
+      adInt = (ar ?? []).reduce((s: number, x: any) => s + Number(x.valor), 0);
+    }
     const orcInt = rubObra.reduce((s, r) => s + Number(r.orcamento_interno), 0);
     const gasto = lancObra.reduce((s, l) => s + l.valor, 0);
     const fat = Number(obra.orcamento_cliente) + adCli;
@@ -330,7 +335,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
     doc.save(`obra-${obra.nome.replace(/\s+/g, "_")}.pdf`);
   }
 
-  function gerarRelatorioGeral() {
+  async function gerarRelatorioGeral() {
     const doc = new jsPDF();
     const data = new Date().toLocaleString("pt-PT");
 
@@ -339,11 +344,23 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
     doc.text(`Gerado em ${data}`, 14, 22);
     doc.setTextColor(0);
 
+    // Carregar todas adenda_rubricas e indexar por obra
+    const adIntPorObra = new Map<string, number>();
+    if (adendas.length > 0) {
+      const { data: ar } = await supabase.from("adenda_rubricas").select("adenda_id,valor")
+        .in("adenda_id", adendas.map(a => a.id));
+      const adendaToObra = new Map(adendas.map(a => [a.id, a.obra_id]));
+      (ar ?? []).forEach((x: any) => {
+        const obraId = adendaToObra.get(x.adenda_id);
+        if (obraId) adIntPorObra.set(obraId, (adIntPorObra.get(obraId) ?? 0) + Number(x.valor));
+      });
+    }
+
     const linhas = obras.map(o => {
       const adObra = adendas.filter(a => a.obra_id === o.id);
       const rubObra = rubricas.filter(r => r.obra_id === o.id);
       const adCli = adObra.reduce((s, a) => s + a.valor_cliente, 0);
-      const adInt = adObra.reduce((s, a) => s + a.valor_interno, 0);
+      const adInt = adIntPorObra.get(o.id) ?? 0;
       const orcInt = rubObra.reduce((s, r) => s + Number(r.orcamento_interno), 0);
       const gasto = lancamentos.filter(l => l.obra_id === o.id).reduce((s, l) => s + l.valor, 0);
       const fat = Number(o.orcamento_cliente) + adCli;

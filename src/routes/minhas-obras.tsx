@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
+import { useAuth } from "@/hooks/use-auth";
 import { estadoLabel, estadoColor } from "@/lib/format";
 import { ChevronRight } from "lucide-react";
 
@@ -12,14 +13,23 @@ export const Route = createFileRoute("/minhas-obras")({
 interface Obra { id: string; nome: string; cliente: string; estado: string; localizacao: string | null }
 
 function Encarregado() {
+  const { user } = useAuth();
   const [obras, setObras] = useState<Obra[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("obras").select("id,nome,cliente,estado,localizacao")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => { setObras((data ?? []) as Obra[]); setLoading(false); });
-  }, []);
+    if (!user) return;
+    supabase.from("obra_utilizadores")
+      .select("obra_id, obras(id, nome, cliente, estado, localizacao)")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        const arr = ((data ?? []) as any[])
+          .map(x => x.obras)
+          .filter(Boolean) as Obra[];
+        setObras(arr);
+        setLoading(false);
+      });
+  }, [user]);
 
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full">

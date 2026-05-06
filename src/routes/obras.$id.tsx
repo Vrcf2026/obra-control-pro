@@ -5,9 +5,13 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
-import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil } from "lucide-react";
+import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { RubricaSelect } from "@/components/RubricaSelect";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
 
@@ -19,6 +23,7 @@ interface Obra {
   id: string; nome: string; cliente: string; localizacao: string | null; estado: string;
   data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number;
 }
+interface EstadoLog { id: string; estado_anterior: string | null; estado_novo: string; alterado_em: string; alterado_por: string | null; nome?: string }
 
 // Regras por estado (visibilidade)
 const ALLOW = {
@@ -31,7 +36,7 @@ const ESTADOS = ["orcamentacao", "adjudicada", "em_curso", "concluida", "faturad
 
 function Detalhe() {
   const { id } = Route.useParams();
-  const { role } = useAuth();
+  const { user, role } = useAuth();
   const isAdmin = role === "admin";
   const isAdminGestor = role === "admin" || role === "gestor";
   const canSpendRole = role === "admin" || role === "encarregado";
@@ -44,6 +49,9 @@ function Detalhe() {
   const [editAdenda, setEditAdenda] = useState<Adenda | null>(null);
   const [showDespesa, setShowDespesa] = useState(false);
   const [showFatura, setShowFatura] = useState(false);
+  const [estadoLog, setEstadoLog] = useState<EstadoLog[]>([]);
+  const [logOpen, setLogOpen] = useState(false);
+  const [delFatId, setDelFatId] = useState<string | null>(null);
 
   useEffect(() => { load(); }, [id]);
 
@@ -72,6 +80,20 @@ function Detalhe() {
     } else {
       setAdRubs([]);
     }
+    if (isAdminGestor) loadLog();
+  }
+
+  async function loadLog() {
+    const { data: logs } = await supabase.from("obra_estado_log" as any)
+      .select("*").eq("obra_id", id).order("alterado_em", { ascending: false });
+    const arr = (logs ?? []) as any[];
+    const ids = Array.from(new Set(arr.map(x => x.alterado_por).filter(Boolean)));
+    const nomes: Record<string, string> = {};
+    if (ids.length) {
+      const { data: profs } = await supabase.from("profiles").select("id,nome").in("id", ids);
+      (profs ?? []).forEach((p: any) => { nomes[p.id] = p.nome; });
+    }
+    setEstadoLog(arr.map(x => ({ ...x, nome: x.alterado_por ? nomes[x.alterado_por] : undefined })));
   }
 
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
@@ -145,9 +167,13 @@ function Detalhe() {
                 value={obra.estado}
                 onChange={async e => {
                   const novo = e.target.value;
+                  const anterior = obra.estado;
                   const { error } = await supabase.from("obras").update({ estado: novo as any }).eq("id", obra.id);
-                  if (error) toast.error(error.message);
-                  else { toast.success("Estado actualizado"); load(); }
+                  if (error) { toast.error(error.message); return; }
+                  await supabase.from("obra_estado_log" as any).insert({
+                    obra_id: obra.id, estado_anterior: anterior, estado_novo: novo, alterado_por: user?.id ?? null,
+                  });
+                  toast.success("Estado actualizado"); load();
                 }}
                 className="text-sm border border-input rounded-md px-2 py-1 bg-background"
               >
@@ -383,7 +409,7 @@ function Detalhe() {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Faturação</h2>
-          {isAdminGestor && podeFatura && (
+          {isAdmin && podeFatura && (
             <button
               onClick={() => setShowFatura(true)}
               className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1"
@@ -419,11 +445,7 @@ function Detalhe() {
                   {isAdmin && (
                     <td className="p-3 text-right">
                       <button
-                        onClick={async () => {
-                          if (!confirm("Apagar fatura?")) return;
-                          const { error } = await supabase.from("faturas_emitidas").delete().eq("id", f.id);
-                          if (error) toast.error(error.message); else { toast.success("Fatura apagada"); load(); }
-                        }}
+                        onClick={() => setDelFatId(f.id)}
                         className="text-muted-foreground hover:text-danger"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -454,6 +476,73 @@ function Detalhe() {
         />
       )}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
+
+      {isAdminGestor && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setLogOpen(o => !o)}
+            className="w-full px-5 py-3 border-b border-border flex items-center justify-between text-left hover:bg-muted/40"
+          >
+            <h2 className="font-medium">Histórico de estados</h2>
+            {logOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </button>
+          {logOpen && (
+            <div className="overflow-x-auto">
+              {estadoLog.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-sm">Sem alterações registadas.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="text-left p-3">Data e hora</th>
+                      <th className="text-left p-3">Alteração</th>
+                      <th className="text-left p-3">Alterado por</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estadoLog.map(l => (
+                      <tr key={l.id} className="border-t border-border">
+                        <td className="p-3 text-muted-foreground tabular-nums">{new Date(l.alterado_em).toLocaleString("pt-PT")}</td>
+                        <td className="p-3">
+                          {l.estado_anterior ? estadoLabel[l.estado_anterior] ?? l.estado_anterior : "—"}
+                          {" → "}
+                          <span className="font-medium">{estadoLabel[l.estado_novo] ?? l.estado_novo}</span>
+                        </td>
+                        <td className="p-3">{l.nome ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <AlertDialog open={!!delFatId} onOpenChange={o => !o && setDelFatId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar lançamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres apagar este lançamento? Esta acção não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-danger text-white hover:bg-danger/90"
+              onClick={async () => {
+                if (!delFatId) return;
+                const { error } = await supabase.from("faturas_emitidas").delete().eq("id", delFatId);
+                setDelFatId(null);
+                if (error) toast.error(error.message); else { toast.success("Lançamento apagado"); load(); }
+              }}
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

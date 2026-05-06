@@ -183,6 +183,41 @@ export type Database = {
           },
         ]
       }
+      obra_estado_log: {
+        Row: {
+          alterado_em: string
+          alterado_por: string | null
+          estado_anterior: string | null
+          estado_novo: string
+          id: string
+          obra_id: string
+        }
+        Insert: {
+          alterado_em?: string
+          alterado_por?: string | null
+          estado_anterior?: string | null
+          estado_novo: string
+          id?: string
+          obra_id: string
+        }
+        Update: {
+          alterado_em?: string
+          alterado_por?: string | null
+          estado_anterior?: string | null
+          estado_novo?: string
+          id?: string
+          obra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_estado_log_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obra_utilizadores: {
         Row: {
           created_at: string
