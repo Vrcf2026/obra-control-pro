@@ -534,6 +534,7 @@ function Detalhe() {
         />
       )}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
+      {editFat && <FaturaPanel obraId={id} fatura={editFat} onClose={() => setEditFat(null)} onSaved={() => { setEditFat(null); load(); }} />}
 
       {isAdminGestor && (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
