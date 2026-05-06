@@ -203,63 +203,60 @@ function Detalhe() {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Adendas</h2>
-          {isAdmin && (
+          {isAdmin && podeAdenda && (
             <button
-              onClick={() => setShowAdenda(true)}
-              disabled={!podeAdenda}
-              title={podeAdenda ? "" : `Não é possível criar adendas no estado "${estadoLabel[obra.estado]}"`}
-              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => { setEditAdenda(null); setShowAdenda(true); }}
+              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1"
             >
               <Plus className="w-4 h-4" /> Nova adenda
             </button>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="text-left p-3">Data</th>
-                <th className="text-left p-3">Descrição</th>
-                <th className="text-right p-3">Valor cliente</th>
-                <th className="text-right p-3">Total interno</th>
-                <th className="text-right p-3">Margem €</th>
-                <th className="text-right p-3">Margem %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {adendas.map(a => {
-                const subs = adRubs.filter(r => r.adenda_id === a.id);
-                const intTot = subs.length > 0 ? subs.reduce((s, r) => s + Number(r.valor), 0) : Number(a.valor_interno);
-                const m = Number(a.valor_cliente) - intTot;
-                const mp = a.valor_cliente > 0 ? (m / Number(a.valor_cliente)) * 100 : 0;
-                return (
-                  <tr key={a.id} className="border-t border-border">
-                    <td className="p-3 text-muted-foreground">{a.data}</td>
-                    <td className="p-3">
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary mr-2">Adenda</span>
-                      {a.descricao}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">{eur(a.valor_cliente)}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(intTot)}</td>
-                    <td className={`p-3 text-right tabular-nums ${m >= 0 ? "text-success" : "text-danger"}`}>{eur(m)}</td>
-                    <td className={`p-3 text-right tabular-nums ${m >= 0 ? "text-success" : "text-danger"}`}>{mp.toFixed(1)}%</td>
-                  </tr>
-                );
-              })}
-              {adendas.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Sem adendas.</td></tr>}
-            </tbody>
-            {adendas.length > 0 && (
-              <tfoot className="bg-muted/30 font-medium">
-                <tr>
-                  <td className="p-3" colSpan={2}>Totais</td>
-                  <td className="p-3 text-right tabular-nums">{eur(adTotCli)}</td>
-                  <td className="p-3 text-right tabular-nums">{eur(adTotInt)}</td>
-                  <td className={`p-3 text-right tabular-nums ${adTotCli - adTotInt >= 0 ? "text-success" : "text-danger"}`}>{eur(adTotCli - adTotInt)}</td>
-                  <td className="p-3"></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+        <div className="p-5 space-y-4">
+          {adendas.length === 0 && <div className="p-6 text-center text-muted-foreground">Sem adendas.</div>}
+          {adendas.map(a => {
+            const subs = adRubs.filter(r => r.adenda_id === a.id);
+            const intTot = subs.reduce((s, r) => s + Number(r.valor), 0);
+            const m = Number(a.valor_cliente) - intTot;
+            const mp = a.valor_cliente > 0 ? (m / Number(a.valor_cliente)) * 100 : 0;
+            return (
+              <div key={a.id} className="border border-border rounded-md">
+                <div className="flex items-start justify-between p-3 gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">{a.data}</div>
+                    <div className="font-medium">{a.descricao}</div>
+                    <div className="mt-1 text-sm text-primary tabular-nums">Valor cliente: {eur(a.valor_cliente)}</div>
+                  </div>
+                  {isAdmin && podeAdenda && (
+                    <button onClick={() => { setEditAdenda(a); setShowAdenda(true); }} className="text-muted-foreground hover:text-foreground" title="Editar">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {subs.length > 0 && (
+                  <table className="w-full text-sm border-t border-border">
+                    <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                      <tr><th className="text-left p-2">Rubrica interna</th><th className="text-right p-2">Valor</th></tr>
+                    </thead>
+                    <tbody>
+                      {subs.map(s => (
+                        <tr key={s.id} className="border-t border-border">
+                          <td className="p-2">{s.nome}</td>
+                          <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                <div className="border-t border-border p-3 grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Total interno</span><span className="tabular-nums">{eur(intTot)}</span></div>
+                  <div className={`flex justify-between font-semibold ${m >= 0 ? "text-success" : "text-danger"}`}>
+                    <span>Margem</span><span className="tabular-nums">{eur(m)} · {mp.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
