@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      adenda_rubricas: {
+        Row: {
+          adenda_id: string
+          created_at: string
+          id: string
+          nome: string
+          valor: number
+        }
+        Insert: {
+          adenda_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          valor?: number
+        }
+        Update: {
+          adenda_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adenda_rubricas_adenda_id_fkey"
+            columns: ["adenda_id"]
+            isOneToOne: false
+            referencedRelation: "adendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       adendas: {
         Row: {
           created_at: string
@@ -45,6 +77,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "adendas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faturas_emitidas: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string | null
+          id: string
+          num_fatura: string
+          obra_id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          id?: string
+          num_fatura: string
+          obra_id: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          id?: string
+          num_fatura?: string
+          obra_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faturas_emitidas_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
