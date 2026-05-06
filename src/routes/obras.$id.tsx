@@ -566,7 +566,7 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
           <div className="text-sm font-medium">Rubricas internas</div>
           {linhas.map((l, i) => (
             <div key={i} className="flex gap-2 items-center">
-              <input value={l.nome} onChange={e => setLinha(i, { nome: e.target.value })} placeholder="Nome" className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1" />
+              <div className="flex-1"><RubricaSelect value={l.nome} onChange={nome => setLinha(i, { nome })} /></div>
               <input ref={el => { valorRefs.current[i] = el; }} type="number" step="0.01" placeholder="0,00"
                 value={l.valor} onChange={e => setLinha(i, { valor: e.target.value })}
                 onKeyDown={e => onValorKey(e, i)} className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" />
