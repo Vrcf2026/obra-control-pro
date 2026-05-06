@@ -71,13 +71,9 @@ function Detalhe() {
 
   const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0);
   const totInterno = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
-  // Total interno das adendas: soma das adenda_rubricas; fallback para valor_interno legado se não houver rubricas
-  const adIntPorAdenda = (adId: string) => {
-    const subs = adRubs.filter(r => r.adenda_id === adId);
-    if (subs.length > 0) return subs.reduce((s, r) => s + Number(r.valor), 0);
-    return 0;
-  };
-  const adTotInt = adendas.reduce((s, a) => s + adIntPorAdenda(a.id) + (adRubs.some(r => r.adenda_id === a.id) ? 0 : Number(a.valor_interno)), 0);
+  const adIntPorAdenda = (adId: string) =>
+    adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
+  const adTotInt = adendas.reduce((s, a) => s + adIntPorAdenda(a.id), 0);
   const adTotCli = adendas.reduce((s, a) => s + Number(a.valor_cliente), 0);
   const totalFaturavel = Number(obra.orcamento_cliente) + adTotCli;
   const margemPrev = totalFaturavel - (totInterno + adTotInt);
