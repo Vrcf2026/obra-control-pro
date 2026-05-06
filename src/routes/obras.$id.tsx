@@ -5,9 +5,13 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
-import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil } from "lucide-react";
+import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { RubricaSelect } from "@/components/RubricaSelect";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
 
