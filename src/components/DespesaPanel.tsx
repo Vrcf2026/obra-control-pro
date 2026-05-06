@@ -94,9 +94,10 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
-      <div className="bg-card w-full sm:max-w-lg h-full overflow-y-auto border-l border-border p-5 space-y-4"
+    <div className="fixed inset-0 z-50 bg-black/40 flex sm:justify-end" onClick={onClose}>
+      <div className="bg-card w-full sm:max-w-lg h-full flex flex-col sm:border-l border-border"
         onClick={e => e.stopPropagation()}>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4" style={{ fontSize: "16px" }}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Registar despesa</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
