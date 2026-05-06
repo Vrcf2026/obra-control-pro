@@ -6,6 +6,7 @@ import { eur } from "@/lib/format";
 import { ArrowLeft, Plus, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { RubricaSelect } from "@/components/RubricaSelect";
 
 export const Route = createFileRoute("/gestao_/obras/$id")({
   component: () => <Protected allow={["admin"]}><Editor /></Protected>,
