@@ -337,12 +337,20 @@ function Linha({ label, value, bold, className }: { label: string; value: string
 }
 
 // ===== Adenda Panel (slide-in com rubricas internas) =====
-function AdendaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: () => void; onSaved: () => void }) {
-  const [descricao, setDescricao] = useState("");
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
-  const [vc, setVc] = useState("0");
+function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; adenda: Adenda | null; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!adenda;
+  const [descricao, setDescricao] = useState(adenda?.descricao ?? "");
+  const [data, setData] = useState(adenda?.data ?? new Date().toISOString().slice(0, 10));
+  const [vc, setVc] = useState(adenda ? String(adenda.valor_cliente) : "0");
   const [linhas, setLinhas] = useState<{ nome: string; valor: string }[]>([{ nome: "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!adenda) return;
+    supabase.from("adenda_rubricas").select("nome,valor").eq("adenda_id", adenda.id).then(({ data }) => {
+      if (data && data.length > 0) setLinhas(data.map(r => ({ nome: r.nome, valor: String(r.valor) })));
+    });
+  }, [adenda]);
 
   function setLinha(i: number, patch: Partial<{ nome: string; valor: string }>) {
     setLinhas(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
@@ -363,25 +371,33 @@ function AdendaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: ()
 
   async function save() {
     if (!descricao) { toast.error("Indique a descrição"); return; }
-    const { data: ad, error } = await supabase.from("adendas").insert({
-      obra_id: obraId, descricao, data, valor_cliente: valorCli, valor_interno: totalInterno,
-    }).select("id").single();
-    if (error || !ad) { toast.error(error?.message ?? "Erro"); return; }
+    let adId = adenda?.id;
+    if (isEdit && adId) {
+      const { error } = await supabase.from("adendas").update({ descricao, data, valor_cliente: valorCli }).eq("id", adId);
+      if (error) { toast.error(error.message); return; }
+      await supabase.from("adenda_rubricas").delete().eq("adenda_id", adId);
+    } else {
+      const { data: ad, error } = await supabase.from("adendas").insert({
+        obra_id: obraId, descricao, data, valor_cliente: valorCli,
+      }).select("id").single();
+      if (error || !ad) { toast.error(error?.message ?? "Erro"); return; }
+      adId = ad.id;
+    }
     const validas = linhas.filter(l => l.nome && Number(l.valor) > 0);
-    if (validas.length > 0) {
+    if (validas.length > 0 && adId) {
       const { error: e2 } = await supabase.from("adenda_rubricas").insert(
-        validas.map(l => ({ adenda_id: ad.id, nome: l.nome, valor: Number(l.valor) }))
+        validas.map(l => ({ adenda_id: adId!, nome: l.nome, valor: Number(l.valor) }))
       );
       if (e2) { toast.error(e2.message); return; }
     }
-    toast.success("Adenda criada"); onSaved();
+    toast.success(isEdit ? "Adenda actualizada" : "Adenda criada"); onSaved();
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
       <div className="bg-card w-full sm:max-w-lg h-full overflow-y-auto border-l border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Nova adenda</h3>
+          <h3 className="text-lg font-semibold">{isEdit ? "Editar adenda" : "Nova adenda"}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 
