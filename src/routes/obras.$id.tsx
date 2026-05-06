@@ -35,7 +35,7 @@ const ESTADOS = ["orcamentacao", "adjudicada", "em_curso", "concluida", "faturad
 
 function Detalhe() {
   const { id } = Route.useParams();
-  const { role } = useAuth();
+  const { user, role } = useAuth();
   const isAdmin = role === "admin";
   const isAdminGestor = role === "admin" || role === "gestor";
   const canSpendRole = role === "admin" || role === "encarregado";
@@ -48,6 +48,9 @@ function Detalhe() {
   const [editAdenda, setEditAdenda] = useState<Adenda | null>(null);
   const [showDespesa, setShowDespesa] = useState(false);
   const [showFatura, setShowFatura] = useState(false);
+  const [estadoLog, setEstadoLog] = useState<EstadoLog[]>([]);
+  const [logOpen, setLogOpen] = useState(false);
+  const [delFatId, setDelFatId] = useState<string | null>(null);
 
   useEffect(() => { load(); }, [id]);
 
