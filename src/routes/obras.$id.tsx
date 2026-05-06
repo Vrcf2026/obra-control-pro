@@ -12,7 +12,7 @@ export const Route = createFileRoute("/obras/$id")({ component: () => <Protected
 
 interface Rubrica { id: string; nome: string; orcamento_interno: number; gasto?: number }
 interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number }
-interface Adenda { id: string; descricao: string; valor_cliente: number; data: string }
+interface Adenda { id: string; descricao: string; valor_cliente: number; data: string; tipo: "extra" | "principal" }
 interface Fatura { id: string; data: string; num_fatura: string; descricao: string | null; valor: number }
 interface Obra {
   id: string; nome: string; cliente: string; localizacao: string | null; estado: string;
