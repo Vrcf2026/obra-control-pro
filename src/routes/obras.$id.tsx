@@ -11,7 +11,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
 
 interface Rubrica { id: string; nome: string; orcamento_interno: number; gasto?: number }
-interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number }
+interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number; gasto?: number }
 interface Adenda { id: string; descricao: string; valor_cliente: number; data: string; tipo: "extra" | "principal" }
 interface Fatura { id: string; data: string; num_fatura: string; descricao: string | null; valor: number }
 interface Obra {
