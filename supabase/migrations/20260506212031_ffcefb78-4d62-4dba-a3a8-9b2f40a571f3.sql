@@ -1,0 +1,2 @@
+ALTER TABLE public.lancamentos ALTER COLUMN rubrica_id DROP NOT NULL;
+ALTER TABLE public.lancamentos ADD CONSTRAINT lancamentos_rubrica_or_adenda_chk CHECK (rubrica_id IS NOT NULL OR adenda_rubrica_id IS NOT NULL);
