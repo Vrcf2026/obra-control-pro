@@ -52,6 +52,7 @@ function Detalhe() {
   const [estadoLog, setEstadoLog] = useState<EstadoLog[]>([]);
   const [logOpen, setLogOpen] = useState(false);
   const [delFatId, setDelFatId] = useState<string | null>(null);
+  const [editFat, setEditFat] = useState<Fatura | null>(null);
   const [avulsas, setAvulsas] = useState<Array<{ id: string; data: string; descricao: string; fornecedor: string | null; rubrica_nome: string | null; valor: number }>>([]);
 
   useEffect(() => { load(); }, [id]);
@@ -490,17 +491,23 @@ function Detalhe() {
               {faturas.map(f => (
                 <tr key={f.id} className="border-t border-border">
                   <td className="p-3 text-muted-foreground">{f.data}</td>
-                  <td className="p-3 font-medium">{f.num_fatura}</td>
+                  <td className="p-3 font-medium">
+                    {isAdmin ? (
+                      <button onClick={() => setEditFat(f)} className="hover:underline text-left">{f.num_fatura}</button>
+                    ) : f.num_fatura}
+                  </td>
                   <td className="p-3">{f.descricao || "—"}</td>
                   <td className="p-3 text-right tabular-nums">{eur(f.valor)}</td>
                   {isAdmin && (
                     <td className="p-3 text-right">
-                      <button
-                        onClick={() => setDelFatId(f.id)}
-                        className="text-muted-foreground hover:text-danger"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button onClick={() => setEditFat(f)} className="text-muted-foreground hover:text-foreground" title="Editar">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setDelFatId(f.id)} className="text-muted-foreground hover:text-danger" title="Apagar">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -527,6 +534,7 @@ function Detalhe() {
         />
       )}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
+      {editFat && <FaturaPanel obraId={id} fatura={editFat} onClose={() => setEditFat(null)} onSaved={() => { setEditFat(null); load(); }} />}
 
       {isAdminGestor && (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -735,25 +743,27 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
 }
 
 // ===== Fatura Panel (slide-in) =====
-function FaturaPanel({ obraId, onClose, onSaved }: { obraId: string; onClose: () => void; onSaved: () => void }) {
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
-  const [num, setNum] = useState("");
-  const [desc, setDesc] = useState("");
-  const [valor, setValor] = useState("0");
+function FaturaPanel({ obraId, fatura, onClose, onSaved }: { obraId: string; fatura?: Fatura; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!fatura;
+  const [data, setData] = useState(fatura?.data ?? new Date().toISOString().slice(0, 10));
+  const [num, setNum] = useState(fatura?.num_fatura ?? "");
+  const [desc, setDesc] = useState(fatura?.descricao ?? "");
+  const [valor, setValor] = useState(fatura ? String(fatura.valor) : "0");
 
   async function save() {
     if (!num) { toast.error("Indique o nº da fatura"); return; }
-    const { error } = await supabase.from("faturas_emitidas").insert({
-      obra_id: obraId, data, num_fatura: num, descricao: desc || null, valor: Number(valor),
-    });
-    if (error) toast.error(error.message); else { toast.success("Fatura registada"); onSaved(); }
+    const payload = { data, num_fatura: num, descricao: desc || null, valor: Number(valor) };
+    const { error } = isEdit && fatura
+      ? await supabase.from("faturas_emitidas").update(payload).eq("id", fatura.id)
+      : await supabase.from("faturas_emitidas").insert({ obra_id: obraId, ...payload });
+    if (error) toast.error(error.message); else { toast.success(isEdit ? "Fatura actualizada" : "Fatura registada"); onSaved(); }
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
       <div className="bg-card w-full sm:max-w-lg h-full overflow-y-auto border-l border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Registar fatura</h3>
+          <h3 className="text-lg font-semibold">{isEdit ? "Editar fatura" : "Registar fatura"}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
 
