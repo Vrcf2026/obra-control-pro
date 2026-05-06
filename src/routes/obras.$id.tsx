@@ -5,14 +5,14 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
-import { Plus, ArrowLeft, Receipt, FileText, X, Trash2 } from "lucide-react";
+import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
 
 interface Rubrica { id: string; nome: string; orcamento_interno: number; gasto?: number }
 interface AdendaRub { id: string; adenda_id: string; nome: string; valor: number }
-interface Adenda { id: string; descricao: string; valor_cliente: number; valor_interno: number; data: string }
+interface Adenda { id: string; descricao: string; valor_cliente: number; data: string }
 interface Fatura { id: string; data: string; num_fatura: string; descricao: string | null; valor: number }
 interface Obra {
   id: string; nome: string; cliente: string; localizacao: string | null; estado: string;
