@@ -56,11 +56,11 @@ export function DespesaPanel({ obraId, rubricas, onClose, onSaved }: {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="input" /></Field>
-          <Field label="Fornecedor"><input value={fornecedor} onChange={e => setFornecedor(e.target.value)} className="input" /></Field>
+          <Field label="Data"><input type="date" value={data} onChange={e => setData(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
+          <Field label="Fornecedor"><input value={fornecedor} onChange={e => setFornecedor(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" /></Field>
         </div>
         <Field label="Descrição / Nº fatura">
-          <input value={descricao} onChange={e => setDescricao(e.target.value)} className="input" />
+          <input value={descricao} onChange={e => setDescricao(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
         </Field>
 
         <div className="space-y-2">
@@ -68,14 +68,14 @@ export function DespesaPanel({ obraId, rubricas, onClose, onSaved }: {
           {linhas.map((l, i) => (
             <div key={i} className="flex gap-2 items-center">
               <select value={l.rubrica_id} onChange={e => setLinha(i, { rubrica_id: e.target.value })}
-                className="input flex-1">
+                className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1">
                 {rubricas.map(r => <option key={r.id} value={r.id}>{r.nome}</option>)}
               </select>
               <input ref={el => { valorRefs.current[i] = el; }}
                 type="number" step="0.01" placeholder="0,00" value={l.valor}
                 onChange={e => setLinha(i, { valor: e.target.value })}
                 onKeyDown={e => onValorKey(e, i)}
-                className="input w-28 text-right" />
+                className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" />
               <button onClick={() => removeLinha(i)} className="text-muted-foreground hover:text-danger"><X className="w-4 h-4" /></button>
             </div>
           ))}
