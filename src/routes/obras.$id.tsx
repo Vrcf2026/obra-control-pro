@@ -426,6 +426,7 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
   const [descricao, setDescricao] = useState(adenda?.descricao ?? "");
   const [data, setData] = useState(adenda?.data ?? new Date().toISOString().slice(0, 10));
   const [vc, setVc] = useState(adenda ? String(adenda.valor_cliente) : "0");
+  const [tipo, setTipo] = useState<"extra" | "principal">(adenda?.tipo ?? "extra");
   const [linhas, setLinhas] = useState<{ nome: string; valor: string }[]>([{ nome: "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
 
