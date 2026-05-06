@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
 import { Plus, Users, Edit, X } from "lucide-react";
-import { estadoLabel, estadoColor, eur } from "@/lib/format";
+import { estadoLabel, eur } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gestao")({
