@@ -251,6 +251,10 @@ function Detalhe() {
             {adendasExtra.map(a => {
               const subs = adRubs.filter(r => r.adenda_id === a.id);
               const intTot = subs.reduce((s, r) => s + Number(r.valor), 0);
+              const gastoTot = subs.reduce((s, r) => s + (r.gasto ?? 0), 0);
+              const desvioTot = intTot - gastoTot;
+              const margemAd = Number(a.valor_cliente) - intTot;
+              const margemAdPct = a.valor_cliente > 0 ? (margemAd / Number(a.valor_cliente)) * 100 : 0;
               return (
                 <div key={a.id} className="border border-border rounded-md">
                   <div className="p-3 flex items-start justify-between gap-3">
@@ -263,21 +267,45 @@ function Detalhe() {
                   {subs.length > 0 && (
                     <table className="w-full text-sm border-t border-border">
                       <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-                        <tr><th className="text-left p-2">Rubrica</th><th className="text-right p-2">Orç. interno</th></tr>
+                        <tr>
+                          <th className="text-left p-2">Rubrica</th>
+                          <th className="text-right p-2">Orç. interno</th>
+                          <th className="text-right p-2">Gasto real</th>
+                          <th className="text-right p-2">Desvio</th>
+                          <th className="text-right p-2">% Cons.</th>
+                        </tr>
                       </thead>
                       <tbody>
-                        {subs.map(s => (
-                          <tr key={s.id} className="border-t border-border">
-                            <td className="p-2">{s.nome}</td>
-                            <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
-                          </tr>
-                        ))}
+                        {subs.map(s => {
+                          const g = s.gasto ?? 0;
+                          const d = Number(s.valor) - g;
+                          const c = Number(s.valor) > 0 ? (g / Number(s.valor)) * 100 : 0;
+                          return (
+                            <tr key={s.id} className="border-t border-border">
+                              <td className="p-2">{s.nome}</td>
+                              <td className="p-2 text-right tabular-nums">{eur(s.valor)}</td>
+                              <td className="p-2 text-right tabular-nums">{eur(g)}</td>
+                              <td className={`p-2 text-right tabular-nums ${d < 0 ? "text-danger" : "text-success"}`}>{eur(d)}</td>
+                              <td className="p-2 text-right tabular-nums">{c.toFixed(0)}%</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tfoot className="bg-muted/30 font-medium">
-                        <tr><td className="p-2">Total interno</td><td className="p-2 text-right tabular-nums">{eur(intTot)}</td></tr>
+                        <tr>
+                          <td className="p-2">Totais</td>
+                          <td className="p-2 text-right tabular-nums">{eur(intTot)}</td>
+                          <td className="p-2 text-right tabular-nums">{eur(gastoTot)}</td>
+                          <td className={`p-2 text-right tabular-nums ${desvioTot < 0 ? "text-danger" : "text-success"}`}>{eur(desvioTot)}</td>
+                          <td className="p-2 text-right tabular-nums">{intTot > 0 ? ((gastoTot / intTot) * 100).toFixed(0) : 0}%</td>
+                        </tr>
                       </tfoot>
                     </table>
                   )}
+                  <div className={`border-t border-border p-3 flex justify-between text-sm font-semibold ${margemAd >= 0 ? "text-success" : "text-danger"}`}>
+                    <span>Margem da adenda</span>
+                    <span className="tabular-nums">{eur(margemAd)} · {margemAdPct.toFixed(1)}%</span>
+                  </div>
                 </div>
               );
             })}
