@@ -265,12 +265,10 @@ function Detalhe() {
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-medium">Faturação</h2>
-          {isAdminGestor && (
+          {isAdminGestor && podeFatura && (
             <button
               onClick={() => setShowFatura(true)}
-              disabled={!podeFatura}
-              title={podeFatura ? "" : `Não é possível faturar no estado "${estadoLabel[obra.estado]}"`}
-              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md inline-flex items-center gap-1"
             >
               <FileText className="w-4 h-4" /> Registar fatura
             </button>
