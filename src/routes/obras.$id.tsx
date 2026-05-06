@@ -188,6 +188,11 @@ function Detalhe() {
             ) : (
               <span className={`text-xs px-2 py-1 rounded-md font-medium w-fit ${estadoColor[obra.estado]}`}>{estadoLabel[obra.estado]}</span>
             )}
+            {(isAdmin || canSpendRole) && (
+              <Link to="/obras/$id/lancamentos" params={{ id }} className="border border-input px-3 py-2 rounded-md text-sm">
+                Ver lançamentos
+              </Link>
+            )}
             {canSpendRole && podeDespesa && (
               <button
                 onClick={() => setShowDespesa(true)}
