@@ -159,10 +159,10 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
                 </select>
               )}
               <input ref={el => { valorRefs.current[i] = el; }}
-                type="number" step="0.01" placeholder="0,00" value={l.valor}
+                type="number" step="0.01" inputMode="decimal" placeholder="0,00" value={l.valor}
                 onChange={e => setLinha(i, { valor: e.target.value })}
                 onKeyDown={e => onValorKey(e, i)}
-                className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" />
+                className="w-28 border border-border rounded-md px-3 py-2 text-base bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" />
               <button onClick={() => removeLinha(i)} className="text-muted-foreground hover:text-danger"><X className="w-4 h-4" /></button>
             </div>
           ))}
@@ -173,10 +173,12 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
           <span className="text-sm text-muted-foreground">Total</span>
           <span className="text-lg font-semibold tabular-nums">{eur(total)}</span>
         </div>
+        </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-3 py-2 text-sm rounded-md border border-input">Cancelar</button>
-          <button onClick={save} className="px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground">Guardar</button>
+        <div className="flex justify-end gap-2 p-4 border-t border-border bg-card sticky bottom-0"
+          style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
+          <button onClick={onClose} className="px-4 py-3 text-sm rounded-md border border-input flex-1 sm:flex-none">Cancelar</button>
+          <button onClick={save} className="px-4 py-3 text-sm rounded-md bg-primary text-primary-foreground font-medium flex-1 sm:flex-none">Guardar</button>
         </div>
       </div>
     </div>
