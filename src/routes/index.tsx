@@ -15,7 +15,7 @@ interface ObraRow {
 
 function Page() {
   const { role } = useAuth();
-  useEffect(() => { if (role === "encarregado") window.location.replace("/encarregado"); }, [role]);
+  useEffect(() => { if (role === "encarregado") window.location.replace("/minhas-obras"); }, [role]);
   return <Protected allow={["admin", "gestor", "encarregado"]}><Dashboard /></Protected>;
 }
 

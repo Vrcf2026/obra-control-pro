@@ -1,15 +1,13 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, HardHat, Settings, LogOut, Building2, Users, BarChart2, ListChecks } from "lucide-react";
+import { LayoutDashboard, HardHat, Settings, LogOut, Building2, Users, BarChart2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { ReactNode } from "react";
 
 const allNav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "gestor"] as const },
-  { to: "/encarregado", label: "As minhas obras", icon: HardHat, roles: ["encarregado", "admin"] as const },
+  { to: "/minhas-obras", label: "As minhas obras", icon: HardHat, roles: ["encarregado", "admin"] as const },
   { to: "/relatorios", label: "Relatórios", icon: BarChart2, roles: ["admin", "gestor"] as const },
-  { to: "/gestao", label: "Gestão", icon: Settings, roles: ["admin"] as const },
-  { to: "/gestao/rubricas", label: "Rubricas", icon: ListChecks, roles: ["admin"] as const },
-  { to: "/gestao/utilizadores", label: "Utilizadores", icon: Users, roles: ["admin"] as const },
+  { to: "/gestao", label: "Gestão", icon: Settings, roles: ["admin"] as const, hasSubpages: true },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -44,7 +42,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
                          : "hover:bg-sidebar-accent/60"
                 }`}>
                 <Icon className="w-4 h-4" />
-                {n.label}
+                <span className="flex-1">{n.label}</span>
+                {n.hasSubpages && active && <ChevronRight className="w-4 h-4 opacity-70" />}
               </Link>
             );
           })}
