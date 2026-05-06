@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
 import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil } from "lucide-react";
+import { RubricaSelect } from "@/components/RubricaSelect";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/obras/$id")({ component: () => <Protected><Detalhe /></Protected> });
