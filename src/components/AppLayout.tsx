@@ -42,7 +42,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
                          : "hover:bg-sidebar-accent/60"
                 }`}>
                 <Icon className="w-4 h-4" />
-                {n.label}
+                <span className="flex-1">{n.label}</span>
+                {n.hasSubpages && active && <ChevronRight className="w-4 h-4 opacity-70" />}
               </Link>
             );
           })}
