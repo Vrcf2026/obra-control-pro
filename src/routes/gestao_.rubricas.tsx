@@ -5,7 +5,7 @@ import { Protected } from "@/components/Protected";
 import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/gestao/rubricas")({
+export const Route = createFileRoute("/gestao_/rubricas")({
   component: () => <Protected allow={["admin"]}><Page /></Protected>,
 });
 
