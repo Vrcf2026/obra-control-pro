@@ -236,7 +236,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
     }
   }
 
-  function gerarRelatorioObra() {
+  async function gerarRelatorioObra() {
     const obra = obras.find(o => o.id === obraId);
     if (!obra) return;
     const doc = new jsPDF();
@@ -258,7 +258,12 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
     const rubObra = rubricas.filter(r => r.obra_id === obra.id);
     const lancObra = lancamentos.filter(l => l.obra_id === obra.id).sort((a, b) => a.data.localeCompare(b.data));
     const adCli = adObra.reduce((s, a) => s + a.valor_cliente, 0);
-    const adInt = adObra.reduce((s, a) => s + a.valor_interno, 0);
+    let adInt = 0;
+    if (adObra.length > 0) {
+      const { data: ar } = await supabase.from("adenda_rubricas").select("valor")
+        .in("adenda_id", adObra.map(a => a.id));
+      adInt = (ar ?? []).reduce((s: number, x: any) => s + Number(x.valor), 0);
+    }
     const orcInt = rubObra.reduce((s, r) => s + Number(r.orcamento_interno), 0);
     const gasto = lancObra.reduce((s, l) => s + l.valor, 0);
     const fat = Number(obra.orcamento_cliente) + adCli;
