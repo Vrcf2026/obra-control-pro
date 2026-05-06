@@ -72,19 +72,44 @@ function Detalhe() {
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
 
   const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0);
-  const totInterno = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
+  const totInternoBase = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adIntPorAdenda = (adId: string) =>
     adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
-  const adTotInt = adendas.reduce((s, a) => s + adIntPorAdenda(a.id), 0);
+  const adendasPrincipal = adendas.filter(a => a.tipo === "principal");
+  const adendasExtra = adendas.filter(a => a.tipo === "extra");
+  const adRubsPrincipal = adRubs.filter(r => adendasPrincipal.some(a => a.id === r.adenda_id));
+  const adTotIntPrincipal = adRubsPrincipal.reduce((s, r) => s + Number(r.valor), 0);
+  const adTotIntExtra = adRubs.filter(r => adendasExtra.some(a => a.id === r.adenda_id)).reduce((s, r) => s + Number(r.valor), 0);
+  const adTotInt = adTotIntPrincipal + adTotIntExtra;
   const adTotCli = adendas.reduce((s, a) => s + Number(a.valor_cliente), 0);
   const totalFaturavel = Number(obra.orcamento_cliente) + adTotCli;
-  const margemPrev = totalFaturavel - (totInterno + adTotInt);
+  const totInterno = totInternoBase + adTotInt;
+  const margemPrev = totalFaturavel - totInterno;
   const margemPrevPct = totalFaturavel > 0 ? (margemPrev / totalFaturavel) * 100 : 0;
   const margemAtual = totalFaturavel - totGasto;
   const margemAtualPct = totalFaturavel > 0 ? (margemAtual / totalFaturavel) * 100 : 0;
 
-  const totFaturado = faturas.reduce((s, f) => s + Number(f.valor), 0);
-  const porFaturar = totalFaturavel - totFaturado;
+  // Consolidação: rubricas iniciais + rubricas das adendas tipo "principal", agrupadas por nome
+  const consolidado = new Map<string, { nome: string; orcInicial: number; adendas: number; gasto: number; rubricaIds: string[] }>();
+  rubricas.forEach(r => {
+    const key = r.nome.trim().toLowerCase();
+    const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
+    cur.orcInicial += Number(r.orcamento_interno);
+    cur.gasto += r.gasto ?? 0;
+    cur.rubricaIds.push(r.id);
+    consolidado.set(key, cur);
+  });
+  adRubsPrincipal.forEach(r => {
+    const key = r.nome.trim().toLowerCase();
+    const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
+    cur.adendas += Number(r.valor);
+    consolidado.set(key, cur);
+  });
+  const consolidadoArr = Array.from(consolidado.values());
+  const totConsInicial = consolidadoArr.reduce((s, x) => s + x.orcInicial, 0);
+  const totConsAdendas = consolidadoArr.reduce((s, x) => s + x.adendas, 0);
+  const totConsTotal = totConsInicial + totConsAdendas;
+  const totConsGasto = consolidadoArr.reduce((s, x) => s + x.gasto, 0);
 
   const podeDespesa = ALLOW.despesas.includes(obra.estado);
   const podeAdenda = ALLOW.adendas.includes(obra.estado);
