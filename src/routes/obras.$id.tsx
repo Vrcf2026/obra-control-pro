@@ -57,14 +57,18 @@ function Detalhe() {
   useEffect(() => { load(); }, [id]);
 
   async function load() {
-    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }] = await Promise.all([
+    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }, { data: av }] = await Promise.all([
       supabase.from("obras").select("*").eq("id", id).maybeSingle(),
       supabase.from("rubricas").select("*").eq("obra_id", id).order("created_at"),
       supabase.from("lancamentos").select("rubrica_id,adenda_rubrica_id,valor").eq("obra_id", id),
       supabase.from("adendas").select("*").eq("obra_id", id).order("data", { ascending: false }),
       supabase.from("faturas_emitidas").select("*").eq("obra_id", id).order("data", { ascending: false }),
+      supabase.from("lancamentos").select("id,data,descricao,fornecedor,rubrica_nome,valor")
+        .eq("obra_id", id).is("rubrica_id", null).is("adenda_rubrica_id", null)
+        .order("data", { ascending: false }),
     ]);
     setObra(o as unknown as Obra | null);
+    setAvulsas(((av ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })));
     const gastosRub = new Map<string, number>();
     const gastosAd = new Map<string, number>();
     (l ?? []).forEach((x: any) => {
