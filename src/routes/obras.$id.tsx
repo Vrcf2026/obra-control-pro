@@ -169,7 +169,7 @@ function Detalhe() {
         {adTotCli !== 0 && <Linha label="Adendas" value={`+${eur(adTotCli)}`} className="text-primary" />}
         <Linha label="Total faturável" value={eur(totalFaturavel)} bold />
         <div className="border-t border-border my-2" />
-        <Linha label="Orçamento interno" value={eur(totInterno + adTotInt)} />
+        <Linha label="Orçamento interno" value={eur(totInterno)} />
         <Linha label="Margem prevista" value={`${eur(margemPrev)} · ${margemPrevPct.toFixed(1)}%`} className={margemPrev >= 0 ? "text-success" : "text-danger"} bold />
         {totGasto > 0 && (
           <>
