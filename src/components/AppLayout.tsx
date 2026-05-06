@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, HardHat, Settings, LogOut, Building2, Users, BarChart2 } from "lucide-react";
+import { LayoutDashboard, HardHat, Settings, LogOut, Building2, Users, BarChart2, ListChecks } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import type { ReactNode } from "react";
 
@@ -8,6 +8,7 @@ const allNav = [
   { to: "/encarregado", label: "As minhas obras", icon: HardHat, roles: ["encarregado", "admin"] as const },
   { to: "/relatorios", label: "Relatórios", icon: BarChart2, roles: ["admin", "gestor"] as const },
   { to: "/gestao", label: "Gestão", icon: Settings, roles: ["admin"] as const },
+  { to: "/gestao/rubricas", label: "Rubricas", icon: ListChecks, roles: ["admin"] as const },
   { to: "/gestao/utilizadores", label: "Utilizadores", icon: Users, roles: ["admin"] as const },
 ];
 
