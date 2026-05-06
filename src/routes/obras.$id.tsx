@@ -322,7 +322,7 @@ function Detalhe() {
         </div>
       </div>
 
-      {showAdenda && <AdendaPanel obraId={id} onClose={() => setShowAdenda(false)} onSaved={() => { setShowAdenda(false); load(); }} />}
+      {showAdenda && <AdendaPanel obraId={id} adenda={editAdenda} onClose={() => { setShowAdenda(false); setEditAdenda(null); }} onSaved={() => { setShowAdenda(false); setEditAdenda(null); load(); }} />}
       {showDespesa && <DespesaPanel obraId={id} rubricas={rubricas} onClose={() => setShowDespesa(false)} onSaved={() => { setShowDespesa(false); load(); }} />}
       {showFatura && <FaturaPanel obraId={id} onClose={() => setShowFatura(false)} onSaved={() => { setShowFatura(false); load(); }} />}
     </div>
