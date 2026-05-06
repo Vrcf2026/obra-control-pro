@@ -492,6 +492,29 @@ function AdendaPanel({ obraId, adenda, onClose, onSaved }: { obraId: string; ade
           <Field label="Valor cliente (€)"><input type="number" step="0.01" value={vc} onChange={e => setVc(e.target.value)} className="w-28 border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary text-right" /></Field>
         </div>
 
+        <Field label="Tipo de adenda">
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { v: "extra", t: "Trabalho extra", s: "Aparece separado na obra" },
+              { v: "principal", t: "Incluir no principal", s: "Junta às rubricas do orçamento" },
+            ] as const).map(opt => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setTipo(opt.v)}
+                className={`text-left border rounded-md px-3 py-2 text-sm transition-colors ${
+                  tipo === opt.v
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="font-medium">{opt.t}</div>
+                <div className="text-xs opacity-80">{opt.s}</div>
+              </button>
+            ))}
+          </div>
+        </Field>
+
         <div className="space-y-2">
           <div className="text-sm font-medium">Rubricas internas</div>
           {linhas.map((l, i) => (
