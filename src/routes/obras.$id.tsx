@@ -167,9 +167,13 @@ function Detalhe() {
                 value={obra.estado}
                 onChange={async e => {
                   const novo = e.target.value;
+                  const anterior = obra.estado;
                   const { error } = await supabase.from("obras").update({ estado: novo as any }).eq("id", obra.id);
-                  if (error) toast.error(error.message);
-                  else { toast.success("Estado actualizado"); load(); }
+                  if (error) { toast.error(error.message); return; }
+                  await supabase.from("obra_estado_log" as any).insert({
+                    obra_id: obra.id, estado_anterior: anterior, estado_novo: novo, alterado_por: user?.id ?? null,
+                  });
+                  toast.success("Estado actualizado"); load();
                 }}
                 className="text-sm border border-input rounded-md px-2 py-1 bg-background"
               >
