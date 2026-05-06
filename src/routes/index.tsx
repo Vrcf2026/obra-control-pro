@@ -27,11 +27,12 @@ function Dashboard() {
 
   async function load() {
     setLoading(true);
-    const [{ data: obras }, { data: rubricas }, { data: lanc }, { data: adendas }] = await Promise.all([
+    const [{ data: obras }, { data: rubricas }, { data: lanc }, { data: adendas }, { data: adRubs }] = await Promise.all([
       supabase.from("obras").select("id,nome,cliente,estado,orcamento_cliente").order("created_at", { ascending: false }),
       supabase.from("rubricas").select("obra_id,orcamento_interno"),
       supabase.from("lancamentos").select("obra_id,valor"),
-      supabase.from("adendas").select("obra_id,valor_cliente,valor_interno"),
+      supabase.from("adendas").select("id,obra_id,valor_cliente"),
+      supabase.from("adenda_rubricas").select("adenda_id,valor"),
     ]);
 
     const map = new Map<string, ObraRow>();
@@ -40,7 +41,9 @@ function Dashboard() {
       orc_cliente: Number(o.orcamento_cliente), orc_interno: 0, gasto: 0, ad_cli: 0, ad_int: 0,
     }));
     (rubricas ?? []).forEach(r => { const o = map.get(r.obra_id); if (o) o.orc_interno += Number(r.orcamento_interno); });
-    (adendas ?? []).forEach(a => { const o = map.get(a.obra_id); if (o) { o.ad_cli += Number(a.valor_cliente); o.ad_int += Number(a.valor_interno); } });
+    const adObra = new Map<string, string>();
+    (adendas ?? []).forEach(a => { adObra.set(a.id, a.obra_id); const o = map.get(a.obra_id); if (o) o.ad_cli += Number(a.valor_cliente); });
+    (adRubs ?? []).forEach(r => { const ob = adObra.get(r.adenda_id); if (!ob) return; const o = map.get(ob); if (o) o.ad_int += Number(r.valor); });
     (lanc ?? []).forEach(l => { const o = map.get(l.obra_id); if (o) o.gasto += Number(l.valor); });
 
     setRows(Array.from(map.values()));
