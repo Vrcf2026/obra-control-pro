@@ -2,16 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { eur } from "@/lib/format";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface Rubrica { id: string; nome: string; origem: string }
 interface Linha { rubrica_id: string; valor: string }
+interface Padrao { id: string; nome: string }
 
-export function DespesaPanel({ obraId, rubricas, onClose, onSaved }: {
+const CUSTOM_TOKEN = "__custom__";
+
+export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved }: {
   obraId: string; rubricas: Rubrica[]; onClose: () => void; onSaved: () => void;
 }) {
   const { user } = useAuth();
+  const [rubricas, setRubricas] = useState<Rubrica[]>(rubricasInit);
+  const [padroes, setPadroes] = useState<Padrao[]>([]);
+  const [customForLine, setCustomForLine] = useState<number | null>(null);
+  const [customDraft, setCustomDraft] = useState("");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [fornecedor, setFornecedor] = useState("");
   const [descricao, setDescricao] = useState("");
