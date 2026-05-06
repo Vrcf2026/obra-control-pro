@@ -30,7 +30,7 @@ function Gestao() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Gestão</h1>
-          <p className="text-sm text-muted-foreground">Criar obras e atribuir encarregados</p>
+          <p className="text-sm text-muted-foreground">Gestão de obras e equipa</p>
         </div>
         <div className="flex gap-2">
           <Link to="/gestao/rubricas" className="border border-input px-3 py-2 rounded-md text-sm">Rubricas padrão</Link>

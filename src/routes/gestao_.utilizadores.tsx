@@ -5,7 +5,7 @@ import { Protected } from "@/components/Protected";
 import { toast } from "sonner";
 import type { Role } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/gestao/utilizadores")({
+export const Route = createFileRoute("/gestao_/utilizadores")({
   component: () => <Protected allow={["admin"]}><Utilizadores /></Protected>,
 });
 
