@@ -192,9 +192,7 @@ function Editor() {
               {rubricas.map((r, i) => (
                 <tr key={i} className="border-t border-border">
                   <td className="p-1.5">
-                    <input ref={el => { nomeRefs.current[i] = el; }}
-                      value={r.nome} onChange={e => setRow(i, { nome: e.target.value })}
-                      placeholder="Nome da rubrica" className="input" />
+                    <RubricaSelect value={r.nome} onChange={nome => setRow(i, { nome })} placeholder="— escolher rubrica —" />
                   </td>
                   <td className="p-1.5">
                     <input type="number" step="0.01" value={r.valor}
