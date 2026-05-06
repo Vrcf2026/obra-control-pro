@@ -52,6 +52,7 @@ function Detalhe() {
   const [estadoLog, setEstadoLog] = useState<EstadoLog[]>([]);
   const [logOpen, setLogOpen] = useState(false);
   const [delFatId, setDelFatId] = useState<string | null>(null);
+  const [avulsas, setAvulsas] = useState<Array<{ id: string; data: string; descricao: string; fornecedor: string | null; rubrica_nome: string | null; valor: number }>>([]);
 
   useEffect(() => { load(); }, [id]);
 
