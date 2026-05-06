@@ -278,6 +278,46 @@ function Detalhe() {
         </div>
       </div>
 
+      {/* Despesas avulsas */}
+      {avulsas.length > 0 && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+            <h2 className="font-medium">Despesas avulsas</h2>
+            <span className="text-xs text-muted-foreground">(sem orçamento — afectam só margem actual)</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">Data</th>
+                  <th className="text-left p-3">Descrição</th>
+                  <th className="text-left p-3">Rubrica</th>
+                  <th className="text-left p-3">Fornecedor</th>
+                  <th className="text-right p-3">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {avulsas.map(x => (
+                  <tr key={x.id} className="border-t border-border">
+                    <td className="p-3 text-muted-foreground tabular-nums">{x.data}</td>
+                    <td className="p-3">{x.descricao || "—"}</td>
+                    <td className="p-3">{x.rubrica_nome || "—"}</td>
+                    <td className="p-3">{x.fornecedor || "—"}</td>
+                    <td className="p-3 text-right tabular-nums">{eur(x.valor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-muted/30 font-medium">
+                <tr>
+                  <td className="p-3" colSpan={4}>Total</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totAvulsas)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Trabalho extra */}
       {adendasExtra.length > 0 && (
         <div className="bg-card border border-border rounded-lg overflow-hidden">
