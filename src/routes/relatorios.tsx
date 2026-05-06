@@ -28,6 +28,7 @@ interface Obra { id: string; nome: string; cliente: string; localizacao: string 
 interface Rubrica { id: string; obra_id: string; nome: string; orcamento_interno: number; }
 interface Lanc { id: string; obra_id: string; rubrica_id: string; data: string; descricao: string; fornecedor: string | null; valor: number; }
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
+interface AdRub { adenda_id: string; valor: number }
 
 function Relatorios() {
   const { nome } = useAuth();
