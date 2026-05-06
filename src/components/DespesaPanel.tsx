@@ -6,10 +6,11 @@ import { Plus, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface Rubrica { id: string; nome: string; origem: string }
-interface Linha { rubrica_id: string; valor: string }
+interface Linha { tipo: "rubrica" | "avulsa"; rubrica_id: string; avulsa_nome: string; valor: string }
 interface Padrao { id: string; nome: string }
 
 const CUSTOM_TOKEN = "__custom__";
+const AVULSA_TOKEN = "__avulsa__";
 
 export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved }: {
   obraId: string; rubricas: Rubrica[]; onClose: () => void; onSaved: () => void;
@@ -22,7 +23,7 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [fornecedor, setFornecedor] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [linhas, setLinhas] = useState<Linha[]>([{ rubrica_id: rubricas[0]?.id ?? "", valor: "" }]);
+  const [linhas, setLinhas] = useState<Linha[]>([{ tipo: "rubrica", rubrica_id: rubricas[0]?.id ?? "", avulsa_nome: "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -31,7 +32,6 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
     });
   }, []);
 
-  // Group rubricas by origem for optgroup
   const grupos = rubricas.reduce<Record<string, Rubrica[]>>((acc, r) => {
     (acc[r.origem] ||= []).push(r); return acc;
   }, {});
@@ -46,7 +46,7 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
     if (error || !nova) { toast.error(error?.message ?? "Erro"); return; }
     const novaRub: Rubrica = { id: nova.id, nome: nova.nome, origem: "Orçamento" };
     setRubricas(rs => [...rs, novaRub]);
-    setLinha(i, { rubrica_id: nova.id });
+    setLinha(i, { tipo: "rubrica", rubrica_id: nova.id });
     setCustomForLine(null); setCustomDraft("");
   }
 
@@ -54,7 +54,7 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
     setLinhas(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
   }
   function addLinha() {
-    setLinhas(ls => [...ls, { rubrica_id: rubricas[0]?.id ?? "", valor: "" }]);
+    setLinhas(ls => [...ls, { tipo: "rubrica", rubrica_id: rubricas[0]?.id ?? "", avulsa_nome: "", valor: "" }]);
     setTimeout(() => valorRefs.current[linhas.length]?.focus(), 0);
   }
   function removeLinha(i: number) { setLinhas(ls => ls.filter((_, idx) => idx !== i)); }
@@ -67,20 +67,26 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
 
   async function save() {
     if (!user) return;
-    const valid = linhas.filter(l => l.rubrica_id && Number(l.valor) > 0);
+    const valid = linhas.filter(l => Number(l.valor) > 0 && (l.tipo === "rubrica" ? l.rubrica_id : l.avulsa_nome.trim()));
     if (valid.length === 0) { toast.error("Adicione pelo menos uma linha"); return; }
     const rows = valid.map(l => {
+      if (l.tipo === "avulsa") {
+        return {
+          obra_id: obraId, rubrica_id: null, adenda_rubrica_id: null,
+          rubrica_nome: l.avulsa_nome.trim(),
+          data, fornecedor: fornecedor || null, descricao,
+          valor: Number(l.valor), registado_por: user.id,
+        };
+      }
       const rub = rubricas.find(r => r.id === l.rubrica_id);
       const isAdenda = rub?.origem.startsWith("Adenda");
       return {
         obra_id: obraId,
         rubrica_id: isAdenda ? null : l.rubrica_id,
         adenda_rubrica_id: isAdenda ? l.rubrica_id : null,
-        data,
-        fornecedor: fornecedor || null,
-        descricao,
-        valor: Number(l.valor),
-        registado_por: user.id,
+        rubrica_nome: null,
+        data, fornecedor: fornecedor || null, descricao,
+        valor: Number(l.valor), registado_por: user.id,
       };
     });
     const { error } = await supabase.from("lancamentos").insert(rows);
@@ -111,25 +117,32 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
               {customForLine === i ? (
                 <>
                   <input
-                    autoFocus
-                    list={`padroes-${i}`}
-                    value={customDraft}
+                    autoFocus list={`padroes-${i}`} value={customDraft}
                     onChange={e => setCustomDraft(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); criarPersonalizada(i, customDraft); } if (e.key === "Escape") { setCustomForLine(null); setCustomDraft(""); } }}
                     placeholder="Nome da nova rubrica..."
                     className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1"
                   />
-                  <datalist id={`padroes-${i}`}>
-                    {padroes.map(p => <option key={p.id} value={p.nome} />)}
-                  </datalist>
+                  <datalist id={`padroes-${i}`}>{padroes.map(p => <option key={p.id} value={p.nome} />)}</datalist>
                   <button type="button" onClick={() => criarPersonalizada(i, customDraft)} className="text-success p-1" title="Confirmar"><Check className="w-4 h-4" /></button>
                   <button type="button" onClick={() => { setCustomForLine(null); setCustomDraft(""); }} className="text-muted-foreground hover:text-danger p-1" title="Cancelar"><X className="w-4 h-4" /></button>
+                </>
+              ) : l.tipo === "avulsa" ? (
+                <>
+                  <input
+                    autoFocus value={l.avulsa_nome}
+                    onChange={e => setLinha(i, { avulsa_nome: e.target.value })}
+                    placeholder="Ex: Taxa municipal, Multa..."
+                    className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1"
+                  />
+                  <button type="button" onClick={() => setLinha(i, { tipo: "rubrica", avulsa_nome: "", rubrica_id: rubricas[0]?.id ?? "" })} className="text-xs text-muted-foreground hover:text-foreground px-1" title="Voltar à lista">↺</button>
                 </>
               ) : (
                 <select value={l.rubrica_id}
                   onChange={e => {
                     const v = e.target.value;
                     if (v === CUSTOM_TOKEN) { setCustomDraft(""); setCustomForLine(i); return; }
+                    if (v === AVULSA_TOKEN) { setLinha(i, { tipo: "avulsa", avulsa_nome: "", rubrica_id: "" }); return; }
                     setLinha(i, { rubrica_id: v });
                   }}
                   className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary flex-1">
@@ -140,6 +153,8 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
                   ))}
                   <option disabled>──────────</option>
                   <option value={CUSTOM_TOKEN}>Nova rubrica personalizada...</option>
+                  <option disabled>── Despesa avulsa ──</option>
+                  <option value={AVULSA_TOKEN}>+ Registar despesa avulsa...</option>
                 </select>
               )}
               <input ref={el => { valorRefs.current[i] = el; }}

@@ -52,18 +52,23 @@ function Detalhe() {
   const [estadoLog, setEstadoLog] = useState<EstadoLog[]>([]);
   const [logOpen, setLogOpen] = useState(false);
   const [delFatId, setDelFatId] = useState<string | null>(null);
+  const [avulsas, setAvulsas] = useState<Array<{ id: string; data: string; descricao: string; fornecedor: string | null; rubrica_nome: string | null; valor: number }>>([]);
 
   useEffect(() => { load(); }, [id]);
 
   async function load() {
-    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }] = await Promise.all([
+    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }, { data: av }] = await Promise.all([
       supabase.from("obras").select("*").eq("id", id).maybeSingle(),
       supabase.from("rubricas").select("*").eq("obra_id", id).order("created_at"),
       supabase.from("lancamentos").select("rubrica_id,adenda_rubrica_id,valor").eq("obra_id", id),
       supabase.from("adendas").select("*").eq("obra_id", id).order("data", { ascending: false }),
       supabase.from("faturas_emitidas").select("*").eq("obra_id", id).order("data", { ascending: false }),
+      supabase.from("lancamentos").select("id,data,descricao,fornecedor,rubrica_nome,valor")
+        .eq("obra_id", id).is("rubrica_id", null).is("adenda_rubrica_id", null)
+        .order("data", { ascending: false }),
     ]);
     setObra(o as unknown as Obra | null);
+    setAvulsas(((av ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })));
     const gastosRub = new Map<string, number>();
     const gastosAd = new Map<string, number>();
     (l ?? []).forEach((x: any) => {
@@ -98,7 +103,8 @@ function Detalhe() {
 
   if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
 
-  const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0);
+  const totAvulsas = avulsas.reduce((s, x) => s + x.valor, 0);
+  const totGasto = rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0) + totAvulsas;
   const totInternoBase = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adIntPorAdenda = (adId: string) =>
     adRubs.filter(r => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
@@ -181,6 +187,11 @@ function Detalhe() {
               </select>
             ) : (
               <span className={`text-xs px-2 py-1 rounded-md font-medium w-fit ${estadoColor[obra.estado]}`}>{estadoLabel[obra.estado]}</span>
+            )}
+            {(isAdmin || canSpendRole) && (
+              <Link to="/obras/$id/lancamentos" params={{ id }} className="border border-input px-3 py-2 rounded-md text-sm">
+                Ver lançamentos
+              </Link>
             )}
             {canSpendRole && podeDespesa && (
               <button
@@ -266,6 +277,46 @@ function Detalhe() {
           </table>
         </div>
       </div>
+
+      {/* Despesas avulsas */}
+      {avulsas.length > 0 && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+            <h2 className="font-medium">Despesas avulsas</h2>
+            <span className="text-xs text-muted-foreground">(sem orçamento — afectam só margem actual)</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">Data</th>
+                  <th className="text-left p-3">Descrição</th>
+                  <th className="text-left p-3">Rubrica</th>
+                  <th className="text-left p-3">Fornecedor</th>
+                  <th className="text-right p-3">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {avulsas.map(x => (
+                  <tr key={x.id} className="border-t border-border">
+                    <td className="p-3 text-muted-foreground tabular-nums">{x.data}</td>
+                    <td className="p-3">{x.descricao || "—"}</td>
+                    <td className="p-3">{x.rubrica_nome || "—"}</td>
+                    <td className="p-3">{x.fornecedor || "—"}</td>
+                    <td className="p-3 text-right tabular-nums">{eur(x.valor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-muted/30 font-medium">
+                <tr>
+                  <td className="p-3" colSpan={4}>Total</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totAvulsas)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Trabalho extra */}
       {adendasExtra.length > 0 && (

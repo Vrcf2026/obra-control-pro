@@ -26,7 +26,7 @@ function Page() {
 
 interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number; }
 interface Rubrica { id: string; obra_id: string; nome: string; orcamento_interno: number; }
-interface Lanc { id: string; obra_id: string; rubrica_id: string; data: string; descricao: string; fornecedor: string | null; valor: number; }
+interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_rubrica_id: string | null; rubrica_nome: string | null; data: string; descricao: string; fornecedor: string | null; valor: number; }
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
 interface AdRub { adenda_id: string; valor: number }
 
@@ -319,6 +319,20 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, geradoPor }: {
       headStyles: { fillColor: [37, 99, 235] },
       styles: { fontSize: 9 },
     });
+
+    // Despesas avulsas
+    const avulsas = lancObra.filter(l => !l.rubrica_id && !l.adenda_rubrica_id);
+    if (avulsas.length > 0) {
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 6,
+        head: [["Data", "Fornecedor", "Descrição", "Rubrica avulsa", "Valor"]],
+        body: avulsas.map(l => [l.data, l.fornecedor ?? "—", l.descricao, l.rubrica_nome ?? "—", eur(l.valor)]),
+        foot: [["", "", "", "Total", eur(avulsas.reduce((s, l) => s + l.valor, 0))]],
+        headStyles: { fillColor: [245, 158, 11] },
+        footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: "bold" },
+        styles: { fontSize: 9 },
+      });
+    }
 
     // Adendas
     if (adObra.length > 0) {
