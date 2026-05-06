@@ -23,6 +23,7 @@ interface Obra {
   id: string; nome: string; cliente: string; localizacao: string | null; estado: string;
   data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number;
 }
+interface EstadoLog { id: string; estado_anterior: string | null; estado_novo: string; alterado_em: string; alterado_por: string | null; nome?: string }
 
 // Regras por estado (visibilidade)
 const ALLOW = {
