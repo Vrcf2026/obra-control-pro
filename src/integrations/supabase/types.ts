@@ -124,6 +124,7 @@ export type Database = {
       }
       lancamentos: {
         Row: {
+          adenda_rubrica_id: string | null
           created_at: string
           data: string
           descricao: string
@@ -135,6 +136,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          adenda_rubrica_id?: string | null
           created_at?: string
           data?: string
           descricao?: string
@@ -146,6 +148,7 @@ export type Database = {
           valor?: number
         }
         Update: {
+          adenda_rubrica_id?: string | null
           created_at?: string
           data?: string
           descricao?: string
@@ -157,6 +160,13 @@ export type Database = {
           valor?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "lancamentos_adenda_rubrica_id_fkey"
+            columns: ["adenda_rubrica_id"]
+            isOneToOne: false
+            referencedRelation: "adenda_rubricas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lancamentos_obra_id_fkey"
             columns: ["obra_id"]

@@ -1,0 +1,2 @@
+ALTER TABLE public.lancamentos ADD COLUMN IF NOT EXISTS adenda_rubrica_id UUID REFERENCES public.adenda_rubricas(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_lancamentos_adenda_rubrica_id ON public.lancamentos(adenda_rubrica_id);
