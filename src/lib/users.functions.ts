@@ -1,9 +1,19 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createMiddleware } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase as supabaseBrowser } from "@/integrations/supabase/client";
 
 const ROLES = ["admin", "gestor", "encarregado"] as const;
+
+// Client middleware: attach the current user's bearer token to server-fn requests
+const withAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { data } = await supabaseBrowser.auth.getSession();
+  const token = data.session?.access_token;
+  return next({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+});
 
 async function ensureAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
