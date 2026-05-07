@@ -118,7 +118,8 @@ function Encarregado() {
       {(() => {
         const filtered = obras.filter(o => {
           const m = q.trim().toLowerCase();
-          const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
+          const cliText = (o.cliente_nome || o.cliente || "").toLowerCase();
+          const okQ = !m || o.nome.toLowerCase().includes(m) || cliText.includes(m);
           const okE = estados.length === 0 || estados.includes(o.estado);
           return okQ && okE;
         });
