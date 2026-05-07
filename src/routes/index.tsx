@@ -28,7 +28,7 @@ function Dashboard() {
   async function load() {
     setLoading(true);
     const [{ data: obras }, { data: rubricas }, { data: lanc }, { data: adendas }, { data: adRubs }] = await Promise.all([
-      supabase.from("obras").select("id,nome,cliente,estado,orcamento_cliente").order("created_at", { ascending: false }),
+      supabase.from("obras").select("id,nome,cliente,cliente_id,estado,orcamento_cliente").order("created_at", { ascending: false }),
       supabase.from("rubricas").select("obra_id,orcamento_interno"),
       supabase.from("lancamentos").select("obra_id,valor"),
       supabase.from("adendas").select("id,obra_id,valor_cliente"),
@@ -37,9 +37,15 @@ function Dashboard() {
 
     const map = new Map<string, ObraRow>();
     (obras ?? []).forEach(o => map.set(o.id, {
-      id: o.id, nome: o.nome, cliente: o.cliente, estado: o.estado,
+      id: o.id, nome: o.nome, cliente: o.cliente, cliente_id: (o as any).cliente_id ?? null, estado: o.estado,
       orc_cliente: Number(o.orcamento_cliente), orc_interno: 0, gasto: 0, ad_cli: 0, ad_int: 0,
     }));
+    const cIds = Array.from(new Set(Array.from(map.values()).map(r => r.cliente_id).filter(Boolean))) as string[];
+    if (cIds.length) {
+      const { data: cs } = await supabase.from("clientes").select("id,nome").in("id", cIds);
+      const cm = new Map((cs ?? []).map((c: any) => [c.id, c.nome]));
+      map.forEach(r => { if (r.cliente_id) r.cliente_nome = cm.get(r.cliente_id); });
+    }
     (rubricas ?? []).forEach(r => { const o = map.get(r.obra_id); if (o) o.orc_interno += Number(r.orcamento_interno); });
     const adObra = new Map<string, string>();
     (adendas ?? []).forEach(a => { adObra.set(a.id, a.obra_id); const o = map.get(a.obra_id); if (o) o.ad_cli += Number(a.valor_cliente); });
