@@ -18,6 +18,8 @@ interface ObraUser { id: string; user_id: string; obra_id: string }
 function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
+  const [q, setQ] = useState("");
+  const [estado, setEstado] = useState("");
 
   useEffect(() => { load(); }, []);
   async function load() {
@@ -41,6 +43,26 @@ function Gestao() {
         </div>
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="🔍 Pesquisar obra ou cliente..."
+          className="flex-1 border border-input rounded-md px-3 py-2 text-sm bg-background"
+        />
+        <select
+          value={estado}
+          onChange={e => setEstado(e.target.value)}
+          className="border border-input rounded-md px-3 py-2 text-sm bg-background"
+        >
+          <option value="">Todos</option>
+          {Object.entries(estadoLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        {(q || estado) && (
+          <button onClick={() => { setQ(""); setEstado(""); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
+        )}
+      </div>
+
       <div className="bg-card border border-border rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
@@ -53,7 +75,16 @@ function Gestao() {
             </tr>
           </thead>
           <tbody>
-            {obras.map(o => (
+            {(() => {
+              const filtered = obras.filter(o => {
+                const m = q.trim().toLowerCase();
+                const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
+                const okE = !estado || o.estado === estado;
+                return okQ && okE;
+              });
+              if (obras.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>;
+              if (filtered.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
+              return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
                 <td className="p-3 font-medium">{o.nome}</td>
                 <td className="p-3 text-muted-foreground">{o.cliente}</td>
@@ -81,8 +112,8 @@ function Gestao() {
                   </Link>
                 </td>
               </tr>
-            ))}
-            {obras.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>}
+              ));
+            })()}
           </tbody>
         </table>
       </div>
