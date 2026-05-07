@@ -113,7 +113,7 @@ function Encarregado() {
         const filtered = obras.filter(o => {
           const m = q.trim().toLowerCase();
           const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
-          const okE = !estado || o.estado === estado;
+          const okE = estados.length === 0 || estados.includes(o.estado);
           return okQ && okE;
         });
         return loading ? (
