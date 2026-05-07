@@ -123,6 +123,45 @@ function Page() {
           </div>
         )}
       </div>
+      {showForm && cliente && <ClienteForm cliente={cliente} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load(); }} />}
+    </div>
+  );
+}
+
+function ClienteForm({ cliente, onClose, onSaved }: { cliente: Cliente; onClose: () => void; onSaved: () => void }) {
+  const [nome, setNome] = useState(cliente.nome ?? "");
+  const [nif, setNif] = useState(cliente.nif ?? "");
+  const [telefone, setTelefone] = useState(cliente.telefone ?? "");
+
+  async function save() {
+    if (!nome.trim()) { toast.error("Nome obrigatório"); return; }
+    const { error } = await supabase.from("clientes").update({ nome: nome.trim(), nif: nif || null, telefone: telefone || null }).eq("id", cliente.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente guardado");
+    onSaved();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center sm:justify-end" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="bg-card w-full sm:max-w-md sm:h-full p-5 space-y-3 rounded-t-lg sm:rounded-none">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Editar cliente</h2>
+          <button onClick={onClose}><X className="w-4 h-4" /></button>
+        </div>
+        <label className="block text-sm"><span className="text-muted-foreground">Nome *</span>
+          <input value={nome} onChange={e => setNome(e.target.value)} className="mt-1 w-full border border-input rounded-md px-3 py-2 bg-background" />
+        </label>
+        <label className="block text-sm"><span className="text-muted-foreground">NIF</span>
+          <input value={nif} onChange={e => setNif(e.target.value)} className="mt-1 w-full border border-input rounded-md px-3 py-2 bg-background" />
+        </label>
+        <label className="block text-sm"><span className="text-muted-foreground">Telefone</span>
+          <input value={telefone} onChange={e => setTelefone(e.target.value)} className="mt-1 w-full border border-input rounded-md px-3 py-2 bg-background" />
+        </label>
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} className="px-3 py-2 text-sm rounded-md border border-input">Cancelar</button>
+          <button onClick={save} className="px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground">Guardar</button>
+        </div>
+      </div>
     </div>
   );
 }
