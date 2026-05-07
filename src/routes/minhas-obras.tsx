@@ -71,20 +71,6 @@ function Encarregado() {
     setShowInstall(false);
   }
 
-  async function abrirDespesaRapida() {
-    if (!obras.length) return;
-    const obra = obras[0];
-    const { data: rubs } = await supabase.from("rubricas").select("id,nome").eq("obra_id", obra.id).order("nome");
-    const { data: ads } = await supabase.from("adendas").select("id,descricao,adenda_rubricas(id,nome)").eq("obra_id", obra.id);
-    const lista: Rubrica[] = [
-      ...((rubs ?? []) as any[]).map(r => ({ id: r.id, nome: r.nome, origem: "Orçamento" })),
-      ...((ads ?? []) as any[]).flatMap((a: any) =>
-        (a.adenda_rubricas ?? []).map((ar: any) => ({ id: ar.id, nome: ar.nome, origem: `Adenda: ${a.descricao}` }))
-      ),
-    ];
-    setRubricas(lista);
-    setShowDespesa(true);
-  }
 
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full pb-28">
