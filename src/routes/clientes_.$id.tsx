@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Edit, X } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes_/$id")({
   component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
@@ -19,17 +20,17 @@ function Page() {
   const isAdmin = role === "admin";
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [rows, setRows] = useState<ObraRow[]>([]);
+  const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => { (async () => {
+  async function load() {
     const { data: c } = await supabase.from("clientes").select("*").eq("id", id).maybeSingle();
     setCliente(c as Cliente | null);
     const { data: obras } = await supabase.from("obras").select("id,nome,estado,orcamento_cliente").eq("cliente_id", id).order("created_at", { ascending: false });
     const ids = (obras ?? []).map((o: any) => o.id);
-    const [{ data: rub }, { data: lan }, { data: ad }, { data: adRubs }] = await Promise.all([
+    const [{ data: rub }, { data: lan }, { data: ad }] = await Promise.all([
       ids.length ? supabase.from("rubricas").select("obra_id,orcamento_interno").in("obra_id", ids) : Promise.resolve({ data: [] as any }),
       ids.length ? supabase.from("lancamentos").select("obra_id,valor").in("obra_id", ids) : Promise.resolve({ data: [] as any }),
       ids.length ? supabase.from("adendas").select("id,obra_id,valor_cliente").in("obra_id", ids) : Promise.resolve({ data: [] as any }),
-      Promise.resolve({ data: [] as any }),
     ]);
     const adIds = (ad ?? []).map((a: any) => a.id);
     const { data: aRubs } = adIds.length ? await supabase.from("adenda_rubricas").select("adenda_id,valor").in("adenda_id", adIds) : { data: [] as any };
@@ -41,7 +42,8 @@ function Page() {
     (aRubs ?? []).forEach((r: any) => { const ob = adObra.get(r.adenda_id); if (!ob) return; const o = map.get(ob); if (o) o.ad_int += Number(r.valor); });
     (lan ?? []).forEach((l: any) => { const o = map.get(l.obra_id); if (o) o.gasto += Number(l.valor); });
     setRows(Array.from(map.values()));
-  })(); }, [id]);
+  }
+  useEffect(() => { load(); }, [id]);
 
   const totFat = rows.reduce((s, r) => s + r.orc_cliente + r.ad_cli, 0);
   const totGasto = rows.reduce((s, r) => s + r.gasto, 0);
@@ -65,9 +67,9 @@ function Page() {
           </div>
         </div>
         {isAdmin && (
-          <Link to="/clientes" className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
+          <button onClick={() => setShowForm(true)} className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
             <Edit className="w-4 h-4" /> Editar
-          </Link>
+          </button>
         )}
       </div>
 
@@ -120,6 +122,45 @@ function Page() {
             </table>
           </div>
         )}
+      </div>
+      {showForm && cliente && <ClienteForm cliente={cliente} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load(); }} />}
+    </div>
+  );
+}
+
+function ClienteForm({ cliente, onClose, onSaved }: { cliente: Cliente; onClose: () => void; onSaved: () => void }) {
+  const [nome, setNome] = useState(cliente.nome ?? "");
+  const [nif, setNif] = useState(cliente.nif ?? "");
+  const [telefone, setTelefone] = useState(cliente.telefone ?? "");
+
+  async function save() {
+    if (!nome.trim()) { toast.error("Nome obrigatório"); return; }
+    const { error } = await supabase.from("clientes").update({ nome: nome.trim(), nif: nif || null, telefone: telefone || null }).eq("id", cliente.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente guardado");
+    onSaved();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center sm:justify-end" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="bg-card w-full sm:max-w-md sm:h-full p-5 space-y-3 rounded-t-lg sm:rounded-none">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Editar cliente</h2>
+          <button onClick={onClose}><X className="w-4 h-4" /></button>
+        </div>
+        <label className="block text-sm"><span className="text-muted-foreground">Nome *</span>
+          <input value={nome} onChange={e => setNome(e.target.value)} className="mt-1 w-full border border-input rounded-md px-3 py-2 bg-background" />
+        </label>
+        <label className="block text-sm"><span className="text-muted-foreground">NIF</span>
+          <input value={nif} onChange={e => setNif(e.target.value)} className="mt-1 w-full border border-input rounded-md px-3 py-2 bg-background" />
+        </label>
+        <label className="block text-sm"><span className="text-muted-foreground">Telefone</span>
+          <input value={telefone} onChange={e => setTelefone(e.target.value)} className="mt-1 w-full border border-input rounded-md px-3 py-2 bg-background" />
+        </label>
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} className="px-3 py-2 text-sm rounded-md border border-input">Cancelar</button>
+          <button onClick={save} className="px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground">Guardar</button>
+        </div>
       </div>
     </div>
   );

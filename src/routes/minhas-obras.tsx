@@ -4,8 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
-import { ChevronRight, Plus, X } from "lucide-react";
-import { DespesaPanel } from "@/components/DespesaPanel";
+import { ChevronRight, X } from "lucide-react";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 
 export const Route = createFileRoute("/minhas-obras")({
@@ -13,7 +12,6 @@ export const Route = createFileRoute("/minhas-obras")({
 });
 
 interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string; localizacao: string | null; gasto?: number }
-interface Rubrica { id: string; nome: string; origem: string }
 
 const DISMISS_KEY = "obracontrol:install-dismissed";
 
@@ -21,8 +19,6 @@ function Encarregado() {
   const { user } = useAuth();
   const [obras, setObras] = useState<Obra[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showDespesa, setShowDespesa] = useState(false);
-  const [rubricas, setRubricas] = useState<Rubrica[]>([]);
   const [installEvt, setInstallEvt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
   const [q, setQ] = useState("");
@@ -75,20 +71,6 @@ function Encarregado() {
     setShowInstall(false);
   }
 
-  async function abrirDespesaRapida() {
-    if (!obras.length) return;
-    const obra = obras[0];
-    const { data: rubs } = await supabase.from("rubricas").select("id,nome").eq("obra_id", obra.id).order("nome");
-    const { data: ads } = await supabase.from("adendas").select("id,descricao,adenda_rubricas(id,nome)").eq("obra_id", obra.id);
-    const lista: Rubrica[] = [
-      ...((rubs ?? []) as any[]).map(r => ({ id: r.id, nome: r.nome, origem: "Orçamento" })),
-      ...((ads ?? []) as any[]).flatMap((a: any) =>
-        (a.adenda_rubricas ?? []).map((ar: any) => ({ id: ar.id, nome: ar.nome, origem: `Adenda: ${a.descricao}` }))
-      ),
-    ];
-    setRubricas(lista);
-    setShowDespesa(true);
-  }
 
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full pb-28">
@@ -159,19 +141,6 @@ function Encarregado() {
       );
       })()}
 
-      {obras.length > 0 && (
-        <button onClick={abrirDespesaRapida}
-          className="fixed bottom-6 right-6 z-40 bg-primary text-primary-foreground rounded-full shadow-lg px-5 py-4 inline-flex items-center gap-2 font-medium active:scale-95 transition-transform"
-          style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
-          <Plus className="w-5 h-5" /> Despesa rápida
-        </button>
-      )}
-
-      {showDespesa && obras[0] && (
-        <DespesaPanel obraId={obras[0].id} rubricas={rubricas}
-          onClose={() => setShowDespesa(false)}
-          onSaved={() => setShowDespesa(false)} />
-      )}
     </div>
   );
 }
