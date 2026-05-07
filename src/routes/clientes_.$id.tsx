@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Edit, X } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes_/$id")({
   component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
