@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { ChevronRight, Plus, X } from "lucide-react";
 import { DespesaPanel } from "@/components/DespesaPanel";
+import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 
 export const Route = createFileRoute("/minhas-obras")({
   component: () => <Protected><Encarregado /></Protected>,
