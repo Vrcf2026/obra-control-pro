@@ -32,9 +32,15 @@ function Encarregado() {
     if (!user) return;
     (async () => {
       const { data } = await supabase.from("obra_utilizadores")
-        .select("obra_id, obras(id, nome, cliente, estado, localizacao)")
+        .select("obra_id, obras(id, nome, cliente, cliente_id, estado, localizacao)")
         .eq("user_id", user.id);
       const arr = ((data ?? []) as any[]).map(x => x.obras).filter(Boolean) as Obra[];
+      const cIds = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];
+      if (cIds.length) {
+        const { data: cs } = await supabase.from("clientes").select("id,nome").in("id", cIds);
+        const m = new Map((cs ?? []).map((c: any) => [c.id, c.nome]));
+        arr.forEach(o => { if (o.cliente_id) o.cliente_nome = m.get(o.cliente_id); });
+      }
       // Totais gastos por obra
       if (arr.length) {
         const ids = arr.map(o => o.id);
