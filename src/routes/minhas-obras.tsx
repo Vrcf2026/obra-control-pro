@@ -26,7 +26,7 @@ function Encarregado() {
   const [installEvt, setInstallEvt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
   const [q, setQ] = useState("");
-  const [estado, setEstado] = useState("");
+  const [estados, setEstados] = useState<string[]>(ESTADOS_DEFAULT);
 
   useEffect(() => {
     if (!user) return;
