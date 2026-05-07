@@ -53,7 +53,7 @@ function Relatorios() {
       supabase.from("rubricas").select("*"),
       supabase.from("lancamentos").select("*"),
       supabase.from("adendas").select("*"),
-      supabase.from("adenda_rubricas").select("adenda_id,nome,valor"),
+      supabase.from("adenda_rubricas").select("id,adenda_id,nome,valor"),
     ]);
     const intMap = new Map<string, number>();
     ((ar ?? []) as AdRub[]).forEach(x => intMap.set(x.adenda_id, (intMap.get(x.adenda_id) ?? 0) + Number(x.valor)));
