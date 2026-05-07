@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ROLES = ["admin", "gestor", "encarregado"] as const;
 
-async function ensureAdmin(supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : any, userId: string) {
+async function ensureAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
