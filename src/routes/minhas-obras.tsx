@@ -131,13 +131,6 @@ function Encarregado() {
       ) : (
         <ul className="space-y-3">
           {filtered.map(o => (
-      {loading ? (
-        <div className="p-8 text-center text-muted-foreground">A carregar...</div>
-      ) : obras.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground bg-card border border-border rounded-lg">Sem obras atribuídas.</div>
-      ) : (
-        <ul className="space-y-3">
-          {obras.map(o => (
             <li key={o.id}>
               <Link to="/obras/$id" params={{ id: o.id }}
                 className="block bg-card border border-border rounded-xl p-5 hover:border-primary/50 transition-colors active:scale-[0.99]">
@@ -162,7 +155,8 @@ function Encarregado() {
             </li>
           ))}
         </ul>
-      )}
+      );
+      })()}
 
       {obras.length > 0 && (
         <button onClick={abrirDespesaRapida}
