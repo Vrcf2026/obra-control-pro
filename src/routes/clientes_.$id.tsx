@@ -20,17 +20,17 @@ function Page() {
   const isAdmin = role === "admin";
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [rows, setRows] = useState<ObraRow[]>([]);
+  const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => { (async () => {
+  async function load() {
     const { data: c } = await supabase.from("clientes").select("*").eq("id", id).maybeSingle();
     setCliente(c as Cliente | null);
     const { data: obras } = await supabase.from("obras").select("id,nome,estado,orcamento_cliente").eq("cliente_id", id).order("created_at", { ascending: false });
     const ids = (obras ?? []).map((o: any) => o.id);
-    const [{ data: rub }, { data: lan }, { data: ad }, { data: adRubs }] = await Promise.all([
+    const [{ data: rub }, { data: lan }, { data: ad }] = await Promise.all([
       ids.length ? supabase.from("rubricas").select("obra_id,orcamento_interno").in("obra_id", ids) : Promise.resolve({ data: [] as any }),
       ids.length ? supabase.from("lancamentos").select("obra_id,valor").in("obra_id", ids) : Promise.resolve({ data: [] as any }),
       ids.length ? supabase.from("adendas").select("id,obra_id,valor_cliente").in("obra_id", ids) : Promise.resolve({ data: [] as any }),
-      Promise.resolve({ data: [] as any }),
     ]);
     const adIds = (ad ?? []).map((a: any) => a.id);
     const { data: aRubs } = adIds.length ? await supabase.from("adenda_rubricas").select("adenda_id,valor").in("adenda_id", adIds) : { data: [] as any };
@@ -42,7 +42,8 @@ function Page() {
     (aRubs ?? []).forEach((r: any) => { const ob = adObra.get(r.adenda_id); if (!ob) return; const o = map.get(ob); if (o) o.ad_int += Number(r.valor); });
     (lan ?? []).forEach((l: any) => { const o = map.get(l.obra_id); if (o) o.gasto += Number(l.valor); });
     setRows(Array.from(map.values()));
-  })(); }, [id]);
+  }
+  useEffect(() => { load(); }, [id]);
 
   const totFat = rows.reduce((s, r) => s + r.orc_cliente + r.ad_cli, 0);
   const totGasto = rows.reduce((s, r) => s + r.gasto, 0);
