@@ -1,11 +1,11 @@
 {
-  "name": "ObraControl",
-  "short_name": "ObraControl",
+  "name": "Decoverdi — Gestão de Obras",
+  "short_name": "Decoverdi Obras",
   "description": "Gestão de custos de obra",
   "start_url": "/minhas-obras",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#2563eb",
+  "theme_color": "#1a5fa8",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },

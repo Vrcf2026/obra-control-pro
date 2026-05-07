@@ -23,14 +23,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex bg-background">
       {/* Sidebar desktop */}
       <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="p-5 flex items-center gap-2 border-b border-sidebar-border">
-          <div className="w-9 h-9 rounded-md bg-sidebar-primary flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-sidebar-primary-foreground" />
-          </div>
-          <div>
-            <div className="font-semibold tracking-tight">ObraControl</div>
-            <div className="text-xs opacity-70">Custos de obra</div>
-          </div>
+        <div className="p-5 border-b border-sidebar-border">
+          <div className="text-2xl font-bold tracking-tight" style={{ color: "#1a5fa8" }}>decoverdi</div>
+          <div className="text-xs opacity-70 mt-0.5">Gestão de Obras</div>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {nav.map(n => {
@@ -61,9 +56,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* Mobile top bar */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden h-14 bg-sidebar text-sidebar-foreground flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            <span className="font-semibold">ObraControl</span>
+          <div className="flex items-baseline gap-2">
+            <span className="font-bold text-lg" style={{ color: "#5b9bd5" }}>decoverdi</span>
+            <span className="text-xs opacity-70">Gestão de Obras</span>
           </div>
           <button onClick={async () => { await signOut(); navigate({ to: "/login" }); }} className="text-sm opacity-80">
             <LogOut className="w-4 h-4" />

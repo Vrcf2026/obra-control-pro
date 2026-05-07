@@ -55,7 +55,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.02 250);
 
-  --primary: oklch(0.32 0.06 255);          /* deep navy */
+  --primary: #1a5fa8;                       /* Decoverdi */
+  --primary-hover: #174f8e;
   --primary-foreground: oklch(0.985 0.003 247);
 
   --secondary: oklch(0.95 0.01 250);
