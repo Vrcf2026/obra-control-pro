@@ -27,7 +27,7 @@ async function ensureAdmin(supabase: any, userId: string) {
 }
 
 export const createUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withAuthHeader, requireSupabaseAuth])
   .inputValidator((d) => z.object({
     email: z.string().email(),
     password: z.string().min(6),
@@ -58,7 +58,7 @@ export const createUser = createServerFn({ method: "POST" })
   });
 
 export const updateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withAuthHeader, requireSupabaseAuth])
   .inputValidator((d) => z.object({
     id: z.string().uuid(),
     nome: z.string().min(1),
@@ -83,7 +83,7 @@ export const updateUser = createServerFn({ method: "POST" })
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withAuthHeader, requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
