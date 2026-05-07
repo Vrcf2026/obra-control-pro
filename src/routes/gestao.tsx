@@ -75,7 +75,16 @@ function Gestao() {
             </tr>
           </thead>
           <tbody>
-            {obras.map(o => (
+            {(() => {
+              const filtered = obras.filter(o => {
+                const m = q.trim().toLowerCase();
+                const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
+                const okE = !estado || o.estado === estado;
+                return okQ && okE;
+              });
+              if (obras.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>;
+              if (filtered.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
+              return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
                 <td className="p-3 font-medium">{o.nome}</td>
                 <td className="p-3 text-muted-foreground">{o.cliente}</td>
@@ -103,8 +112,8 @@ function Gestao() {
                   </Link>
                 </td>
               </tr>
-            ))}
-            {obras.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>}
+              ));
+            })()}
           </tbody>
         </table>
       </div>
