@@ -67,9 +67,9 @@ function Page() {
           </div>
         </div>
         {isAdmin && (
-          <Link to="/clientes" className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
+          <button onClick={() => setShowForm(true)} className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
             <Edit className="w-4 h-4" /> Editar
-          </Link>
+          </button>
         )}
       </div>
 
