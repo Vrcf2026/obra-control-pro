@@ -9,7 +9,7 @@ import { AlertTriangle, Briefcase, TrendingUp } from "lucide-react";
 export const Route = createFileRoute("/")({ component: Page });
 
 interface ObraRow {
-  id: string; nome: string; cliente: string; estado: string;
+  id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string;
   orc_cliente: number; orc_interno: number; gasto: number; ad_cli: number; ad_int: number;
 }
 
