@@ -18,6 +18,8 @@ interface ObraUser { id: string; user_id: string; obra_id: string }
 function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
+  const [q, setQ] = useState("");
+  const [estado, setEstado] = useState("");
 
   useEffect(() => { load(); }, []);
   async function load() {
