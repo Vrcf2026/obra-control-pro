@@ -12,7 +12,7 @@ export const Route = createFileRoute("/minhas-obras")({
   component: () => <Protected><Encarregado /></Protected>,
 });
 
-interface Obra { id: string; nome: string; cliente: string; estado: string; localizacao: string | null; gasto?: number }
+interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string; localizacao: string | null; gasto?: number }
 interface Rubrica { id: string; nome: string; origem: string }
 
 const DISMISS_KEY = "obracontrol:install-dismissed";
