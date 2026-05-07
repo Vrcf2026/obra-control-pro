@@ -5,6 +5,7 @@ import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
 import { Plus, Users, Edit, X } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
+import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gestao")({
@@ -19,7 +20,7 @@ function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
   const [q, setQ] = useState("");
-  const [estado, setEstado] = useState("");
+  const [estados, setEstados] = useState<string[]>(ESTADOS_DEFAULT);
 
   useEffect(() => { load(); }, []);
   async function load() {
@@ -50,16 +51,9 @@ function Gestao() {
           placeholder="🔍 Pesquisar obra ou cliente..."
           className="flex-1 border border-input rounded-md px-3 py-2 text-sm bg-background"
         />
-        <select
-          value={estado}
-          onChange={e => setEstado(e.target.value)}
-          className="border border-input rounded-md px-3 py-2 text-sm bg-background"
-        >
-          <option value="">Todos</option>
-          {Object.entries(estadoLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        {(q || estado) && (
-          <button onClick={() => { setQ(""); setEstado(""); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
+        <EstadoFilter value={estados} onChange={setEstados} />
+        {(q || estados.length !== ESTADOS_DEFAULT.length || !ESTADOS_DEFAULT.every(e => estados.includes(e))) && (
+          <button onClick={() => { setQ(""); setEstados(ESTADOS_DEFAULT); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
         )}
       </div>
 
@@ -79,14 +73,14 @@ function Gestao() {
               const filtered = obras.filter(o => {
                 const m = q.trim().toLowerCase();
                 const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
-                const okE = !estado || o.estado === estado;
+                const okE = estados.length === 0 || estados.includes(o.estado);
                 return okQ && okE;
               });
               if (obras.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>;
               if (filtered.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
               return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
-                <td className="p-3 font-medium">{o.nome}</td>
+                <td className="p-3"><Link to="/obras/$id" params={{ id: o.id }} className="font-medium hover:underline text-primary cursor-pointer">{o.nome}</Link></td>
                 <td className="p-3 text-muted-foreground">{o.cliente}</td>
                 <td className="p-3">
                   <select

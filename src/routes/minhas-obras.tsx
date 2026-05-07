@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { ChevronRight, Plus, X } from "lucide-react";
 import { DespesaPanel } from "@/components/DespesaPanel";
+import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 
 export const Route = createFileRoute("/minhas-obras")({
   component: () => <Protected><Encarregado /></Protected>,
@@ -25,7 +26,7 @@ function Encarregado() {
   const [installEvt, setInstallEvt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
   const [q, setQ] = useState("");
-  const [estado, setEstado] = useState("");
+  const [estados, setEstados] = useState<string[]>(ESTADOS_DEFAULT);
 
   useEffect(() => {
     if (!user) return;
@@ -103,23 +104,16 @@ function Encarregado() {
           placeholder="🔍 Pesquisar obra ou cliente..."
           className="flex-1 border border-input rounded-md px-3 py-2 text-sm bg-background"
         />
-        <select
-          value={estado}
-          onChange={e => setEstado(e.target.value)}
-          className="border border-input rounded-md px-3 py-2 text-sm bg-background"
-        >
-          <option value="">Todos</option>
-          {Object.entries(estadoLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        {(q || estado) && (
-          <button onClick={() => { setQ(""); setEstado(""); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
+        <EstadoFilter value={estados} onChange={setEstados} />
+        {(q || estados.length !== ESTADOS_DEFAULT.length || !ESTADOS_DEFAULT.every(e => estados.includes(e))) && (
+          <button onClick={() => { setQ(""); setEstados(ESTADOS_DEFAULT); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
         )}
       </div>
       {(() => {
         const filtered = obras.filter(o => {
           const m = q.trim().toLowerCase();
           const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
-          const okE = !estado || o.estado === estado;
+          const okE = estados.length === 0 || estados.includes(o.estado);
           return okQ && okE;
         });
         return loading ? (
