@@ -32,6 +32,12 @@ export const Route = createRootRoute({
       { name: "apple-mobile-web-app-title", content: "Decoverdi Obras" },
       { property: "og:title", content: "Decoverdi — Gestão de Obras" },
       { property: "og:description", content: "Decoverdi, S.A. — Gestão de custos de obras." },
+      { name: "twitter:title", content: "Decoverdi — Gestão de Obras" },
+      { name: "twitter:description", content: "Decoverdi, S.A. — Gestão de custos de obras." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83f644a8-d4b0-42d3-8421-b3e2b9f2b0d7/id-preview-8657f4fa--bb45f4a6-f51c-4961-b079-5c4a3e5fa37e.lovable.app-1778151557711.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/83f644a8-d4b0-42d3-8421-b3e2b9f2b0d7/id-preview-8657f4fa--bb45f4a6-f51c-4961-b079-5c4a3e5fa37e.lovable.app-1778151557711.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
