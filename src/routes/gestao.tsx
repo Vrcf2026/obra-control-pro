@@ -73,7 +73,7 @@ function Gestao() {
               const filtered = obras.filter(o => {
                 const m = q.trim().toLowerCase();
                 const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
-                const okE = !estado || o.estado === estado;
+                const okE = estados.length === 0 || estados.includes(o.estado);
                 return okQ && okE;
               });
               if (obras.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>;
