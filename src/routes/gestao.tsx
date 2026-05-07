@@ -80,7 +80,7 @@ function Gestao() {
               if (filtered.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
               return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
-                <td className="p-3 font-medium">{o.nome}</td>
+                <td className="p-3"><Link to="/obras/$id" params={{ id: o.id }} className="font-medium hover:underline text-primary cursor-pointer">{o.nome}</Link></td>
                 <td className="p-3 text-muted-foreground">{o.cliente}</td>
                 <td className="p-3">
                   <select
