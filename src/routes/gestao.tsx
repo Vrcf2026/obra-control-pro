@@ -20,7 +20,7 @@ function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
   const [q, setQ] = useState("");
-  const [estado, setEstado] = useState("");
+  const [estados, setEstados] = useState<string[]>(ESTADOS_DEFAULT);
 
   useEffect(() => { load(); }, []);
   async function load() {
