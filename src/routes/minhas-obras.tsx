@@ -158,19 +158,6 @@ function Encarregado() {
       );
       })()}
 
-      {obras.length > 0 && (
-        <button onClick={abrirDespesaRapida}
-          className="fixed bottom-6 right-6 z-40 bg-primary text-primary-foreground rounded-full shadow-lg px-5 py-4 inline-flex items-center gap-2 font-medium active:scale-95 transition-transform"
-          style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
-          <Plus className="w-5 h-5" /> Despesa rápida
-        </button>
-      )}
-
-      {showDespesa && obras[0] && (
-        <DespesaPanel obraId={obras[0].id} rubricas={rubricas}
-          onClose={() => setShowDespesa(false)}
-          onSaved={() => setShowDespesa(false)} />
-      )}
     </div>
   );
 }
