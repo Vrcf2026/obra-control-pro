@@ -125,7 +125,7 @@ function Editor() {
   async function save() {
     if (!nome || !cliente) { toast.error("Nome e cliente obrigatórios"); return; }
     const payload = {
-      nome, cliente, localizacao: loc || null, estado: estado as never,
+      nome, cliente, cliente_id: clienteId || null, localizacao: loc || null, estado: estado as never,
       data_inicio: ini || null, data_fim_previsto: fim || null,
       orcamento_cliente: Number(orcCliente),
     };
