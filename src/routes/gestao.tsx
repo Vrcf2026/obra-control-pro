@@ -5,6 +5,7 @@ import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
 import { Plus, Users, Edit, X } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
+import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gestao")({
