@@ -29,7 +29,7 @@ interface Obra { id: string; nome: string; cliente: string; localizacao: string 
 interface Rubrica { id: string; obra_id: string; nome: string; orcamento_interno: number; }
 interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_rubrica_id: string | null; rubrica_nome: string | null; data: string; descricao: string; fornecedor: string | null; valor: number; }
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
-interface AdRub { adenda_id: string; nome: string; valor: number }
+interface AdRub { id: string; adenda_id: string; nome: string; valor: number }
 
 const PALETTE = ["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
