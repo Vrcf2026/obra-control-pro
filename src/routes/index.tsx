@@ -9,7 +9,7 @@ import { AlertTriangle, Briefcase, TrendingUp } from "lucide-react";
 export const Route = createFileRoute("/")({ component: Page });
 
 interface ObraRow {
-  id: string; nome: string; cliente: string; estado: string;
+  id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string;
   orc_cliente: number; orc_interno: number; gasto: number; ad_cli: number; ad_int: number;
 }
 
@@ -28,7 +28,7 @@ function Dashboard() {
   async function load() {
     setLoading(true);
     const [{ data: obras }, { data: rubricas }, { data: lanc }, { data: adendas }, { data: adRubs }] = await Promise.all([
-      supabase.from("obras").select("id,nome,cliente,estado,orcamento_cliente").order("created_at", { ascending: false }),
+      supabase.from("obras").select("id,nome,cliente,cliente_id,estado,orcamento_cliente").order("created_at", { ascending: false }),
       supabase.from("rubricas").select("obra_id,orcamento_interno"),
       supabase.from("lancamentos").select("obra_id,valor"),
       supabase.from("adendas").select("id,obra_id,valor_cliente"),
@@ -37,9 +37,15 @@ function Dashboard() {
 
     const map = new Map<string, ObraRow>();
     (obras ?? []).forEach(o => map.set(o.id, {
-      id: o.id, nome: o.nome, cliente: o.cliente, estado: o.estado,
+      id: o.id, nome: o.nome, cliente: o.cliente, cliente_id: (o as any).cliente_id ?? null, estado: o.estado,
       orc_cliente: Number(o.orcamento_cliente), orc_interno: 0, gasto: 0, ad_cli: 0, ad_int: 0,
     }));
+    const cIds = Array.from(new Set(Array.from(map.values()).map(r => r.cliente_id).filter(Boolean))) as string[];
+    if (cIds.length) {
+      const { data: cs } = await supabase.from("clientes").select("id,nome").in("id", cIds);
+      const cm = new Map((cs ?? []).map((c: any) => [c.id, c.nome]));
+      map.forEach(r => { if (r.cliente_id) r.cliente_nome = cm.get(r.cliente_id); });
+    }
     (rubricas ?? []).forEach(r => { const o = map.get(r.obra_id); if (o) o.orc_interno += Number(r.orcamento_interno); });
     const adObra = new Map<string, string>();
     (adendas ?? []).forEach(a => { adObra.set(a.id, a.obra_id); const o = map.get(a.obra_id); if (o) o.ad_cli += Number(a.valor_cliente); });
@@ -107,7 +113,7 @@ function Dashboard() {
                   return (
                     <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                       <td className="p-3"><Link to="/obras/$id" params={{ id: r.id }} className="font-medium hover:text-primary">{r.nome}</Link></td>
-                      <td className="p-3 text-muted-foreground">{r.cliente}</td>
+                      <td className="p-3 text-muted-foreground">{r.cliente_nome || r.cliente}</td>
                       <td className="p-3"><span className={`text-xs px-2 py-1 rounded-md font-medium ${estadoColor[r.estado]}`}>{estadoLabel[r.estado]}</span></td>
                       <td className="p-3 text-right tabular-nums">{eur(r.orc_cliente)}</td>
                       <td className="p-3 text-right tabular-nums">{eur(fat)}</td>

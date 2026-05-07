@@ -13,10 +13,12 @@ import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as MinhasObrasRouteImport } from './routes/minhas-obras'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GestaoRouteImport } from './routes/gestao'
+import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObrasIdRouteImport } from './routes/obras.$id'
 import { Route as GestaoUtilizadoresRouteImport } from './routes/gestao_.utilizadores'
 import { Route as GestaoRubricasRouteImport } from './routes/gestao_.rubricas'
+import { Route as ClientesIdRouteImport } from './routes/clientes_.$id'
 import { Route as ObrasIdLancamentosRouteImport } from './routes/obras_.$id.lancamentos'
 import { Route as GestaoObrasIdRouteImport } from './routes/gestao_.obras.$id'
 
@@ -40,6 +42,11 @@ const GestaoRoute = GestaoRouteImport.update({
   path: '/gestao',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -60,6 +67,11 @@ const GestaoRubricasRoute = GestaoRubricasRouteImport.update({
   path: '/gestao/rubricas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientesIdRoute = ClientesIdRouteImport.update({
+  id: '/clientes_/$id',
+  path: '/clientes/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObrasIdLancamentosRoute = ObrasIdLancamentosRouteImport.update({
   id: '/obras_/$id/lancamentos',
   path: '/obras/$id/lancamentos',
@@ -73,10 +85,12 @@ const GestaoObrasIdRoute = GestaoObrasIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
   '/gestao': typeof GestaoRoute
   '/login': typeof LoginRoute
   '/minhas-obras': typeof MinhasObrasRoute
   '/relatorios': typeof RelatoriosRoute
+  '/clientes/$id': typeof ClientesIdRoute
   '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
@@ -85,10 +99,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
   '/gestao': typeof GestaoRoute
   '/login': typeof LoginRoute
   '/minhas-obras': typeof MinhasObrasRoute
   '/relatorios': typeof RelatoriosRoute
+  '/clientes/$id': typeof ClientesIdRoute
   '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
@@ -98,10 +114,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/clientes': typeof ClientesRoute
   '/gestao': typeof GestaoRoute
   '/login': typeof LoginRoute
   '/minhas-obras': typeof MinhasObrasRoute
   '/relatorios': typeof RelatoriosRoute
+  '/clientes_/$id': typeof ClientesIdRoute
   '/gestao_/rubricas': typeof GestaoRubricasRoute
   '/gestao_/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
@@ -112,10 +130,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/clientes'
     | '/gestao'
     | '/login'
     | '/minhas-obras'
     | '/relatorios'
+    | '/clientes/$id'
     | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
@@ -124,10 +144,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/clientes'
     | '/gestao'
     | '/login'
     | '/minhas-obras'
     | '/relatorios'
+    | '/clientes/$id'
     | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
@@ -136,10 +158,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/clientes'
     | '/gestao'
     | '/login'
     | '/minhas-obras'
     | '/relatorios'
+    | '/clientes_/$id'
     | '/gestao_/rubricas'
     | '/gestao_/utilizadores'
     | '/obras/$id'
@@ -149,10 +173,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ClientesRoute: typeof ClientesRoute
   GestaoRoute: typeof GestaoRoute
   LoginRoute: typeof LoginRoute
   MinhasObrasRoute: typeof MinhasObrasRoute
   RelatoriosRoute: typeof RelatoriosRoute
+  ClientesIdRoute: typeof ClientesIdRoute
   GestaoRubricasRoute: typeof GestaoRubricasRoute
   GestaoUtilizadoresRoute: typeof GestaoUtilizadoresRoute
   ObrasIdRoute: typeof ObrasIdRoute
@@ -190,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -218,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoRubricasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clientes_/$id': {
+      id: '/clientes_/$id'
+      path: '/clientes/$id'
+      fullPath: '/clientes/$id'
+      preLoaderRoute: typeof ClientesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/obras_/$id/lancamentos': {
       id: '/obras_/$id/lancamentos'
       path: '/obras/$id/lancamentos'
@@ -237,10 +277,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ClientesRoute: ClientesRoute,
   GestaoRoute: GestaoRoute,
   LoginRoute: LoginRoute,
   MinhasObrasRoute: MinhasObrasRoute,
   RelatoriosRoute: RelatoriosRoute,
+  ClientesIdRoute: ClientesIdRoute,
   GestaoRubricasRoute: GestaoRubricasRoute,
   GestaoUtilizadoresRoute: GestaoUtilizadoresRoute,
   ObrasIdRoute: ObrasIdRoute,

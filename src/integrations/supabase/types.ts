@@ -84,6 +84,30 @@ export type Database = {
           },
         ]
       }
+      clientes: {
+        Row: {
+          created_at: string
+          id: string
+          nif: string | null
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nif?: string | null
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nif?: string | null
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
       faturas_emitidas: {
         Row: {
           created_at: string
@@ -256,6 +280,7 @@ export type Database = {
       obras: {
         Row: {
           cliente: string
+          cliente_id: string | null
           created_at: string
           data_fim_previsto: string | null
           data_inicio: string | null
@@ -267,6 +292,7 @@ export type Database = {
         }
         Insert: {
           cliente: string
+          cliente_id?: string | null
           created_at?: string
           data_fim_previsto?: string | null
           data_inicio?: string | null
@@ -278,6 +304,7 @@ export type Database = {
         }
         Update: {
           cliente?: string
+          cliente_id?: string | null
           created_at?: string
           data_fim_previsto?: string | null
           data_inicio?: string | null
@@ -287,7 +314,15 @@ export type Database = {
           nome?: string
           orcamento_cliente?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "obras_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

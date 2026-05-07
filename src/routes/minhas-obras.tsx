@@ -12,7 +12,7 @@ export const Route = createFileRoute("/minhas-obras")({
   component: () => <Protected><Encarregado /></Protected>,
 });
 
-interface Obra { id: string; nome: string; cliente: string; estado: string; localizacao: string | null; gasto?: number }
+interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string; localizacao: string | null; gasto?: number }
 interface Rubrica { id: string; nome: string; origem: string }
 
 const DISMISS_KEY = "obracontrol:install-dismissed";
@@ -32,9 +32,15 @@ function Encarregado() {
     if (!user) return;
     (async () => {
       const { data } = await supabase.from("obra_utilizadores")
-        .select("obra_id, obras(id, nome, cliente, estado, localizacao)")
+        .select("obra_id, obras(id, nome, cliente, cliente_id, estado, localizacao)")
         .eq("user_id", user.id);
       const arr = ((data ?? []) as any[]).map(x => x.obras).filter(Boolean) as Obra[];
+      const cIds = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];
+      if (cIds.length) {
+        const { data: cs } = await supabase.from("clientes").select("id,nome").in("id", cIds);
+        const m = new Map((cs ?? []).map((c: any) => [c.id, c.nome]));
+        arr.forEach(o => { if (o.cliente_id) o.cliente_nome = m.get(o.cliente_id); });
+      }
       // Totais gastos por obra
       if (arr.length) {
         const ids = arr.map(o => o.id);
@@ -112,7 +118,8 @@ function Encarregado() {
       {(() => {
         const filtered = obras.filter(o => {
           const m = q.trim().toLowerCase();
-          const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
+          const cliText = (o.cliente_nome || o.cliente || "").toLowerCase();
+          const okQ = !m || o.nome.toLowerCase().includes(m) || cliText.includes(m);
           const okE = estados.length === 0 || estados.includes(o.estado);
           return okQ && okE;
         });
@@ -132,7 +139,7 @@ function Encarregado() {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-base truncate">{o.nome}</div>
                     <div className="text-sm text-muted-foreground truncate mt-0.5">
-                      {o.cliente}{o.localizacao ? ` · ${o.localizacao}` : ""}
+                      {o.cliente_nome || o.cliente}{o.localizacao ? ` · ${o.localizacao}` : ""}
                     </div>
                     <div className="flex items-center gap-2 mt-3 flex-wrap">
                       <span className={`inline-block text-xs px-2 py-1 rounded-md font-medium ${estadoColor[o.estado]}`}>

@@ -14,6 +14,8 @@ export const Route = createFileRoute("/gestao_/obras/$id")({
 
 interface RubricaRow { id?: string; nome: string; valor: string }
 
+interface Cliente { id: string; nome: string; nif: string | null; telefone: string | null }
+
 function Editor() {
   const { id } = Route.useParams();
   const isNew = id === "novo";
@@ -21,6 +23,12 @@ function Editor() {
 
   const [nome, setNome] = useState("");
   const [cliente, setCliente] = useState("");
+  const [clienteId, setClienteId] = useState<string>("");
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [showNovoCliente, setShowNovoCliente] = useState(false);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoNif, setNovoNif] = useState("");
+  const [novoTel, setNovoTel] = useState("");
   const [loc, setLoc] = useState("");
   const [estado, setEstado] = useState("orcamentacao");
   const [ini, setIni] = useState("");
@@ -32,6 +40,11 @@ function Editor() {
   const nomeRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("clientes").select("id,nome,nif,telefone").order("nome");
+    setClientes((data ?? []) as Cliente[]);
+  })(); }, []);
+
   useEffect(() => {
     if (isNew) return;
     (async () => {
@@ -41,6 +54,7 @@ function Editor() {
       ]);
       if (o) {
         setNome(o.nome); setCliente(o.cliente); setLoc(o.localizacao ?? "");
+        setClienteId((o as any).cliente_id ?? "");
         setEstado(o.estado); setIni(o.data_inicio ?? ""); setFim(o.data_fim_previsto ?? "");
         setOrcCliente(String((o as { orcamento_cliente: number }).orcamento_cliente ?? 0));
       }
@@ -50,6 +64,21 @@ function Editor() {
       setLoading(false);
     })();
   }, [id, isNew]);
+
+  async function criarCliente() {
+    if (!novoNome.trim()) { toast.error("Nome do cliente obrigatório"); return; }
+    const { data, error } = await supabase.from("clientes")
+      .insert({ nome: novoNome.trim(), nif: novoNif || null, telefone: novoTel || null })
+      .select("id,nome,nif,telefone").maybeSingle();
+    if (error || !data) { toast.error(error?.message ?? "Erro"); return; }
+    setClientes(cs => [...cs, data as Cliente].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setClienteId(data.id);
+    setCliente(data.nome);
+    setShowNovoCliente(false);
+    setNovoNome(""); setNovoNif(""); setNovoTel("");
+    toast.success("Cliente criado");
+  }
+
 
   function setRow(i: number, patch: Partial<RubricaRow>) {
     setRubricas(rs => rs.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -96,7 +125,7 @@ function Editor() {
   async function save() {
     if (!nome || !cliente) { toast.error("Nome e cliente obrigatórios"); return; }
     const payload = {
-      nome, cliente, localizacao: loc || null, estado: estado as never,
+      nome, cliente, cliente_id: clienteId || null, localizacao: loc || null, estado: estado as never,
       data_inicio: ini || null, data_fim_previsto: fim || null,
       orcamento_cliente: Number(orcCliente),
     };
@@ -144,7 +173,30 @@ function Editor() {
         <h2 className="font-medium">Dados gerais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <F label="Nome"><input value={nome} onChange={e => setNome(e.target.value)} className="input" /></F>
-          <F label="Cliente"><input value={cliente} onChange={e => setCliente(e.target.value)} className="input" /></F>
+          <F label="Cliente">
+            <select value={clienteId} onChange={e => {
+              const v = e.target.value;
+              if (v === "__novo__") { setShowNovoCliente(true); return; }
+              setClienteId(v);
+              const c = clientes.find(x => x.id === v);
+              if (c) setCliente(c.nome);
+            }} className="input">
+              <option value="">— escolher cliente —</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              <option value="__novo__">+ Novo cliente</option>
+            </select>
+            {showNovoCliente && (
+              <div className="mt-2 p-3 border border-border rounded-md bg-muted/30 space-y-2">
+                <input value={novoNome} onChange={e => setNovoNome(e.target.value)} placeholder="Nome *" className="input" />
+                <input value={novoNif} onChange={e => setNovoNif(e.target.value)} placeholder="NIF" className="input" />
+                <input value={novoTel} onChange={e => setNovoTel(e.target.value)} placeholder="Telefone" className="input" />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowNovoCliente(false)} className="px-3 py-1.5 text-xs rounded-md border border-input">Cancelar</button>
+                  <button onClick={criarCliente} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground">Criar</button>
+                </div>
+              </div>
+            )}
+          </F>
           <F label="Localização"><input value={loc} onChange={e => setLoc(e.target.value)} className="input" /></F>
           <F label="Estado">
             <select value={estado} onChange={e => setEstado(e.target.value)} className="input">
