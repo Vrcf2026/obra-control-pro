@@ -1,9 +1,19 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createMiddleware } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase as supabaseBrowser } from "@/integrations/supabase/client";
 
 const ROLES = ["admin", "gestor", "encarregado"] as const;
+
+// Client middleware: attach the current user's bearer token to server-fn requests
+const withAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { data } = await supabaseBrowser.auth.getSession();
+  const token = data.session?.access_token;
+  return next({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+});
 
 async function ensureAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -17,7 +27,7 @@ async function ensureAdmin(supabase: any, userId: string) {
 }
 
 export const createUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withAuthHeader, requireSupabaseAuth])
   .inputValidator((d) => z.object({
     email: z.string().email(),
     password: z.string().min(6),
@@ -48,7 +58,7 @@ export const createUser = createServerFn({ method: "POST" })
   });
 
 export const updateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withAuthHeader, requireSupabaseAuth])
   .inputValidator((d) => z.object({
     id: z.string().uuid(),
     nome: z.string().min(1),
@@ -73,7 +83,7 @@ export const updateUser = createServerFn({ method: "POST" })
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([withAuthHeader, requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
