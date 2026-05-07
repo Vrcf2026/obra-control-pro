@@ -12,7 +12,6 @@ export const Route = createFileRoute("/minhas-obras")({
 });
 
 interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string; localizacao: string | null; gasto?: number }
-interface Rubrica { id: string; nome: string; origem: string }
 
 const DISMISS_KEY = "obracontrol:install-dismissed";
 
@@ -20,8 +19,6 @@ function Encarregado() {
   const { user } = useAuth();
   const [obras, setObras] = useState<Obra[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showDespesa, setShowDespesa] = useState(false);
-  const [rubricas, setRubricas] = useState<Rubrica[]>([]);
   const [installEvt, setInstallEvt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
   const [q, setQ] = useState("");
