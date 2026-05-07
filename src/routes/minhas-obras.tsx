@@ -96,6 +96,41 @@ function Encarregado() {
         <h1 className="text-2xl font-semibold">As minhas obras</h1>
         <p className="text-sm text-muted-foreground">Toque numa obra para registar despesas</p>
       </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="🔍 Pesquisar obra ou cliente..."
+          className="flex-1 border border-input rounded-md px-3 py-2 text-sm bg-background"
+        />
+        <select
+          value={estado}
+          onChange={e => setEstado(e.target.value)}
+          className="border border-input rounded-md px-3 py-2 text-sm bg-background"
+        >
+          <option value="">Todos</option>
+          {Object.entries(estadoLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        {(q || estado) && (
+          <button onClick={() => { setQ(""); setEstado(""); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
+        )}
+      </div>
+      {(() => {
+        const filtered = obras.filter(o => {
+          const m = q.trim().toLowerCase();
+          const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
+          const okE = !estado || o.estado === estado;
+          return okQ && okE;
+        });
+        return loading ? (
+        <div className="p-8 text-center text-muted-foreground">A carregar...</div>
+      ) : obras.length === 0 ? (
+        <div className="p-8 text-center text-muted-foreground bg-card border border-border rounded-lg">Sem obras atribuídas.</div>
+      ) : filtered.length === 0 ? (
+        <div className="p-8 text-center text-muted-foreground bg-card border border-border rounded-lg">Nenhuma obra encontrada.</div>
+      ) : (
+        <ul className="space-y-3">
+          {filtered.map(o => (
       {loading ? (
         <div className="p-8 text-center text-muted-foreground">A carregar...</div>
       ) : obras.length === 0 ? (
