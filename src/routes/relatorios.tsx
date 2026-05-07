@@ -466,7 +466,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     // Página 1
     header(doc, `Relatório Executivo — ${MESES[mes]} ${ano}`, `${obrasActivas.length} obras activas`);
     let y = kpiBoxes(doc, 30, [
-      { label: "Volume faturável", value: eur(totalFat), color: [37,99,235] },
+      { label: "Volume faturável", value: eur(totalFat), color: [26,95,168] },
       { label: "Margem média", value: `${margemPct.toFixed(1)}%`, color: margemPct > 15 ? [22,163,74] : margemPct >= 0 ? [217,119,6] : [220,38,38] },
       { label: "Gasto acumulado", value: eur(gastoAno), color: [124,58,237] },
       { label: "Obras activas", value: String(obrasActivas.length), color: [0,0,0] },
@@ -481,7 +481,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         eur(c.margem), `${c.pct.toFixed(1)}%`,
         c.pct > 10 ? "●" : c.pct >= 0 ? "●" : "●",
       ]),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
       didParseCell: (data) => {
@@ -518,7 +518,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
       body: Array.from(porRubMes.entries()).sort((a,b) => b[1]-a[1]).map(([n,v]) => [
         n, eur(v), totalMes > 0 ? `${(v/totalMes*100).toFixed(1)}%` : "—", eur(porRubAno.get(n) || 0),
       ]),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -558,7 +558,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         const varr = prev > 0 ? ((m.valor - prev)/prev)*100 : 0;
         return [m.mes, eur(m.valor), i === 0 ? "—" : `${varr >= 0 ? "+" : ""}${varr.toFixed(1)}%`];
       }),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -576,7 +576,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     header(doc, obra.nome, obra.cliente);
 
     let y = kpiBoxes(doc, 30, [
-      { label: "Total fat.", value: eur(c.fat), color: [37,99,235] },
+      { label: "Total fat.", value: eur(c.fat), color: [26,95,168] },
       { label: "Gasto real", value: eur(c.gasto), color: [124,58,237] },
       { label: "Margem", value: eur(c.margem), color: c.pct > 15 ? [22,163,74] : c.pct >= 0 ? [217,119,6] : [220,38,38] },
       { label: "Margem %", value: `${c.pct.toFixed(1)}%`, color: c.pct > 15 ? [22,163,74] : c.pct >= 0 ? [217,119,6] : [220,38,38] },
@@ -595,7 +595,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         const pct = oi > 0 ? (g/oi)*100 : 0;
         return [r.nome, eur(oi), eur(g), eur(oi - g), `${pct.toFixed(1)}%`];
       }),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -604,7 +604,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
       startY: (doc as any).lastAutoTable.finalY + 6,
       head: [["Data","Fornecedor","Descrição","Rubrica","Valor"]],
       body: lancObra.map(l => [l.data, l.fornecedor ?? "—", l.descricao, rubricaNomeLanc(l, rubricas, adRubs), eur(l.valor)]),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -628,7 +628,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         startY: (doc as any).lastAutoTable.finalY + 6,
         head: [["Data","Descrição","Valor cliente"]],
         body: adObra.map(a => [a.data, a.descricao, eur(a.valor_cliente)]),
-        headStyles: { fillColor: [37,99,235], textColor: 255 },
+        headStyles: { fillColor: [26,95,168], textColor: 255 },
         alternateRowStyles: { fillColor: [248,250,252] },
         styles: { fontSize: 9, cellPadding: 2.5 },
       });
