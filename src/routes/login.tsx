@@ -52,7 +52,7 @@ function Login() {
             <Building2 className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold">ObraControl</h1>
+            <h1 className="text-xl font-semibold">Decoverdi — Gestão de Obras</h1>
             <p className="text-xs text-muted-foreground">Controlo de custos de obras públicas</p>
           </div>
         </div>

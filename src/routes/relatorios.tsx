@@ -31,7 +31,7 @@ interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
 interface AdRub { id: string; adenda_id: string; nome: string; valor: number }
 
-const PALETTE = ["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
+const PALETTE = ["#1a5fa8","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const ESTADO_LABEL: Record<string,string> = { orcamentacao:"Em orçamentação", adjudicada:"Adjudicada", em_curso:"Em curso", concluida:"Concluída", faturada:"Faturada" };
 
@@ -344,8 +344,8 @@ function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas }: {
             <AreaChart data={evolucaoData}>
               <defs>
                 <linearGradient id="gastoFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#1a5fa8" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#1a5fa8" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -356,7 +356,7 @@ function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas }: {
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="gasto" name="Gasto real" stroke="#2563eb" strokeWidth={2} fill="url(#gastoFill)" />
+              <Area type="monotone" dataKey="gasto" name="Gasto real" stroke="#1a5fa8" strokeWidth={2} fill="url(#gastoFill)" />
               <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#94a3b8" strokeWidth={2} strokeDasharray="6 4" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
@@ -408,13 +408,16 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
 
   function header(doc: jsPDF, titulo: string, sub: string) {
     const w = doc.internal.pageSize.getWidth();
-    doc.setFontSize(16); doc.setTextColor(0); doc.text("ObraControl", 14, 14);
-    doc.setFontSize(11); doc.text(titulo, 14, 21);
+    doc.setFontSize(18); doc.setTextColor(26, 95, 168); doc.setFont("helvetica", "bold");
+    doc.text("DECOVERDI, S.A.", 14, 14);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(110);
+    doc.text("Gestão de Obras", 14, 19.5);
+    doc.setTextColor(0); doc.setFontSize(11); doc.text(titulo, 14, 27);
     doc.setFontSize(9); doc.setTextColor(120);
     doc.text(sub, w - 14, 14, { align: "right" });
     doc.text(`Gerado em ${hoje.toLocaleString("pt-PT")} · por ${geradoPor}`, w - 14, 20, { align: "right" });
-    doc.setDrawColor(37, 99, 235); doc.setLineWidth(0.8);
-    doc.line(14, 25, w - 14, 25);
+    doc.setDrawColor(26, 95, 168); doc.setLineWidth(2);
+    doc.line(14, 30, w - 14, 30);
     doc.setTextColor(0);
   }
 
@@ -425,7 +428,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     for (let i = 1; i <= pages; i++) {
       doc.setPage(i);
       doc.setFontSize(8); doc.setTextColor(140);
-      doc.text("Confidencial · ObraControl", 14, h - 6);
+      doc.text("Decoverdi, S.A. — Documento confidencial", 14, h - 6);
       doc.text(`Página ${i} de ${pages}`, w - 14, h - 6, { align: "right" });
     }
   }
@@ -463,7 +466,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     // Página 1
     header(doc, `Relatório Executivo — ${MESES[mes]} ${ano}`, `${obrasActivas.length} obras activas`);
     let y = kpiBoxes(doc, 30, [
-      { label: "Volume faturável", value: eur(totalFat), color: [37,99,235] },
+      { label: "Volume faturável", value: eur(totalFat), color: [26,95,168] },
       { label: "Margem média", value: `${margemPct.toFixed(1)}%`, color: margemPct > 15 ? [22,163,74] : margemPct >= 0 ? [217,119,6] : [220,38,38] },
       { label: "Gasto acumulado", value: eur(gastoAno), color: [124,58,237] },
       { label: "Obras activas", value: String(obrasActivas.length), color: [0,0,0] },
@@ -478,7 +481,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         eur(c.margem), `${c.pct.toFixed(1)}%`,
         c.pct > 10 ? "●" : c.pct >= 0 ? "●" : "●",
       ]),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
       didParseCell: (data) => {
@@ -515,7 +518,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
       body: Array.from(porRubMes.entries()).sort((a,b) => b[1]-a[1]).map(([n,v]) => [
         n, eur(v), totalMes > 0 ? `${(v/totalMes*100).toFixed(1)}%` : "—", eur(porRubAno.get(n) || 0),
       ]),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -555,7 +558,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         const varr = prev > 0 ? ((m.valor - prev)/prev)*100 : 0;
         return [m.mes, eur(m.valor), i === 0 ? "—" : `${varr >= 0 ? "+" : ""}${varr.toFixed(1)}%`];
       }),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -573,7 +576,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     header(doc, obra.nome, obra.cliente);
 
     let y = kpiBoxes(doc, 30, [
-      { label: "Total fat.", value: eur(c.fat), color: [37,99,235] },
+      { label: "Total fat.", value: eur(c.fat), color: [26,95,168] },
       { label: "Gasto real", value: eur(c.gasto), color: [124,58,237] },
       { label: "Margem", value: eur(c.margem), color: c.pct > 15 ? [22,163,74] : c.pct >= 0 ? [217,119,6] : [220,38,38] },
       { label: "Margem %", value: `${c.pct.toFixed(1)}%`, color: c.pct > 15 ? [22,163,74] : c.pct >= 0 ? [217,119,6] : [220,38,38] },
@@ -592,7 +595,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         const pct = oi > 0 ? (g/oi)*100 : 0;
         return [r.nome, eur(oi), eur(g), eur(oi - g), `${pct.toFixed(1)}%`];
       }),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -601,7 +604,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
       startY: (doc as any).lastAutoTable.finalY + 6,
       head: [["Data","Fornecedor","Descrição","Rubrica","Valor"]],
       body: lancObra.map(l => [l.data, l.fornecedor ?? "—", l.descricao, rubricaNomeLanc(l, rubricas, adRubs), eur(l.valor)]),
-      headStyles: { fillColor: [37,99,235], textColor: 255 },
+      headStyles: { fillColor: [26,95,168], textColor: 255 },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
@@ -625,7 +628,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         startY: (doc as any).lastAutoTable.finalY + 6,
         head: [["Data","Descrição","Valor cliente"]],
         body: adObra.map(a => [a.data, a.descricao, eur(a.valor_cliente)]),
-        headStyles: { fillColor: [37,99,235], textColor: 255 },
+        headStyles: { fillColor: [26,95,168], textColor: 255 },
         alternateRowStyles: { fillColor: [248,250,252] },
         styles: { fontSize: 9, cellPadding: 2.5 },
       });

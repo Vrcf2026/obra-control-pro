@@ -1,4 +1,4 @@
-const CACHE = "obracontrol-v1";
+const CACHE = "decoverdi-v1";
 const PRECACHE = ["/", "/minhas-obras", "/login"];
 self.addEventListener("install", (e) => {
   self.skipWaiting();
