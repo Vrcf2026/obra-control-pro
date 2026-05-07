@@ -79,7 +79,8 @@ function Gestao() {
             {(() => {
               const filtered = obras.filter(o => {
                 const m = q.trim().toLowerCase();
-                const okQ = !m || o.nome.toLowerCase().includes(m) || (o.cliente || "").toLowerCase().includes(m);
+                const cliText = (o.cliente_nome || o.cliente || "").toLowerCase();
+                const okQ = !m || o.nome.toLowerCase().includes(m) || cliText.includes(m);
                 const okE = estados.length === 0 || estados.includes(o.estado);
                 return okQ && okE;
               });
@@ -88,7 +89,7 @@ function Gestao() {
               return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
                 <td className="p-3"><Link to="/obras/$id" params={{ id: o.id }} className="font-medium hover:underline text-primary cursor-pointer">{o.nome}</Link></td>
-                <td className="p-3 text-muted-foreground">{o.cliente}</td>
+                <td className="p-3 text-muted-foreground">{o.cliente_nome || o.cliente}</td>
                 <td className="p-3">
                   <select
                     value={o.estado}
