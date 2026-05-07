@@ -113,7 +113,7 @@ function Dashboard() {
                   return (
                     <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                       <td className="p-3"><Link to="/obras/$id" params={{ id: r.id }} className="font-medium hover:text-primary">{r.nome}</Link></td>
-                      <td className="p-3 text-muted-foreground">{r.cliente}</td>
+                      <td className="p-3 text-muted-foreground">{r.cliente_nome || r.cliente}</td>
                       <td className="p-3"><span className={`text-xs px-2 py-1 rounded-md font-medium ${estadoColor[r.estado]}`}>{estadoLabel[r.estado]}</span></td>
                       <td className="p-3 text-right tabular-nums">{eur(r.orc_cliente)}</td>
                       <td className="p-3 text-right tabular-nums">{eur(fat)}</td>
