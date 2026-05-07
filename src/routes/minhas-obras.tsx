@@ -24,6 +24,8 @@ function Encarregado() {
   const [rubricas, setRubricas] = useState<Rubrica[]>([]);
   const [installEvt, setInstallEvt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
+  const [q, setQ] = useState("");
+  const [estado, setEstado] = useState("");
 
   useEffect(() => {
     if (!user) return;
