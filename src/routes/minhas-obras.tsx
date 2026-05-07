@@ -139,7 +139,7 @@ function Encarregado() {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-base truncate">{o.nome}</div>
                     <div className="text-sm text-muted-foreground truncate mt-0.5">
-                      {o.cliente}{o.localizacao ? ` · ${o.localizacao}` : ""}
+                      {o.cliente_nome || o.cliente}{o.localizacao ? ` · ${o.localizacao}` : ""}
                     </div>
                     <div className="flex items-center gap-2 mt-3 flex-wrap">
                       <span className={`inline-block text-xs px-2 py-1 rounded-md font-medium ${estadoColor[o.estado]}`}>
