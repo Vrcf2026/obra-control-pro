@@ -14,6 +14,8 @@ export const Route = createFileRoute("/gestao_/obras/$id")({
 
 interface RubricaRow { id?: string; nome: string; valor: string }
 
+interface Cliente { id: string; nome: string; nif: string | null; telefone: string | null }
+
 function Editor() {
   const { id } = Route.useParams();
   const isNew = id === "novo";
@@ -21,6 +23,12 @@ function Editor() {
 
   const [nome, setNome] = useState("");
   const [cliente, setCliente] = useState("");
+  const [clienteId, setClienteId] = useState<string>("");
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [showNovoCliente, setShowNovoCliente] = useState(false);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoNif, setNovoNif] = useState("");
+  const [novoTel, setNovoTel] = useState("");
   const [loc, setLoc] = useState("");
   const [estado, setEstado] = useState("orcamentacao");
   const [ini, setIni] = useState("");
@@ -32,6 +40,11 @@ function Editor() {
   const nomeRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("clientes").select("id,nome,nif,telefone").order("nome");
+    setClientes((data ?? []) as Cliente[]);
+  })(); }, []);
+
   useEffect(() => {
     if (isNew) return;
     (async () => {
@@ -41,6 +54,7 @@ function Editor() {
       ]);
       if (o) {
         setNome(o.nome); setCliente(o.cliente); setLoc(o.localizacao ?? "");
+        setClienteId((o as any).cliente_id ?? "");
         setEstado(o.estado); setIni(o.data_inicio ?? ""); setFim(o.data_fim_previsto ?? "");
         setOrcCliente(String((o as { orcamento_cliente: number }).orcamento_cliente ?? 0));
       }
@@ -50,6 +64,21 @@ function Editor() {
       setLoading(false);
     })();
   }, [id, isNew]);
+
+  async function criarCliente() {
+    if (!novoNome.trim()) { toast.error("Nome do cliente obrigatório"); return; }
+    const { data, error } = await supabase.from("clientes")
+      .insert({ nome: novoNome.trim(), nif: novoNif || null, telefone: novoTel || null })
+      .select("id,nome,nif,telefone").maybeSingle();
+    if (error || !data) { toast.error(error?.message ?? "Erro"); return; }
+    setClientes(cs => [...cs, data as Cliente].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setClienteId(data.id);
+    setCliente(data.nome);
+    setShowNovoCliente(false);
+    setNovoNome(""); setNovoNif(""); setNovoTel("");
+    toast.success("Cliente criado");
+  }
+
 
   function setRow(i: number, patch: Partial<RubricaRow>) {
     setRubricas(rs => rs.map((r, idx) => idx === i ? { ...r, ...patch } : r));
