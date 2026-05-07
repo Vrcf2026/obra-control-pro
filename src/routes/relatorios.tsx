@@ -31,7 +31,7 @@ interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
 interface AdRub { id: string; adenda_id: string; nome: string; valor: number }
 
-const PALETTE = ["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
+const PALETTE = ["#1a5fa8","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const ESTADO_LABEL: Record<string,string> = { orcamentacao:"Em orçamentação", adjudicada:"Adjudicada", em_curso:"Em curso", concluida:"Concluída", faturada:"Faturada" };
 
@@ -344,8 +344,8 @@ function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas }: {
             <AreaChart data={evolucaoData}>
               <defs>
                 <linearGradient id="gastoFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#1a5fa8" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#1a5fa8" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -356,7 +356,7 @@ function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas }: {
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="gasto" name="Gasto real" stroke="#2563eb" strokeWidth={2} fill="url(#gastoFill)" />
+              <Area type="monotone" dataKey="gasto" name="Gasto real" stroke="#1a5fa8" strokeWidth={2} fill="url(#gastoFill)" />
               <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#94a3b8" strokeWidth={2} strokeDasharray="6 4" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
@@ -408,13 +408,16 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
 
   function header(doc: jsPDF, titulo: string, sub: string) {
     const w = doc.internal.pageSize.getWidth();
-    doc.setFontSize(16); doc.setTextColor(0); doc.text("ObraControl", 14, 14);
-    doc.setFontSize(11); doc.text(titulo, 14, 21);
+    doc.setFontSize(18); doc.setTextColor(26, 95, 168); doc.setFont("helvetica", "bold");
+    doc.text("DECOVERDI, S.A.", 14, 14);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(110);
+    doc.text("Gestão de Obras", 14, 19.5);
+    doc.setTextColor(0); doc.setFontSize(11); doc.text(titulo, 14, 27);
     doc.setFontSize(9); doc.setTextColor(120);
     doc.text(sub, w - 14, 14, { align: "right" });
     doc.text(`Gerado em ${hoje.toLocaleString("pt-PT")} · por ${geradoPor}`, w - 14, 20, { align: "right" });
-    doc.setDrawColor(37, 99, 235); doc.setLineWidth(0.8);
-    doc.line(14, 25, w - 14, 25);
+    doc.setDrawColor(26, 95, 168); doc.setLineWidth(2);
+    doc.line(14, 30, w - 14, 30);
     doc.setTextColor(0);
   }
 
@@ -425,7 +428,7 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     for (let i = 1; i <= pages; i++) {
       doc.setPage(i);
       doc.setFontSize(8); doc.setTextColor(140);
-      doc.text("Confidencial · ObraControl", 14, h - 6);
+      doc.text("Decoverdi, S.A. — Documento confidencial", 14, h - 6);
       doc.text(`Página ${i} de ${pages}`, w - 14, h - 6, { align: "right" });
     }
   }
