@@ -12,7 +12,7 @@ export const Route = createFileRoute("/gestao")({
   component: () => <Protected allow={["admin"]}><Gestao /></Protected>,
 });
 
-interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; orcamento_cliente: number }
+interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; localizacao: string | null; estado: string; orcamento_cliente: number; cliente_nome?: string }
 interface Profile { id: string; nome: string; email: string | null }
 interface ObraUser { id: string; user_id: string; obra_id: string }
 
@@ -24,8 +24,15 @@ function Gestao() {
 
   useEffect(() => { load(); }, []);
   async function load() {
-    const { data } = await supabase.from("obras").select("id,nome,cliente,localizacao,estado,orcamento_cliente").order("created_at", { ascending: false });
-    setObras((data ?? []) as Obra[]);
+    const { data } = await supabase.from("obras").select("id,nome,cliente,cliente_id,localizacao,estado,orcamento_cliente").order("created_at", { ascending: false });
+    const arr = (data ?? []) as Obra[];
+    const ids = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];
+    if (ids.length) {
+      const { data: cs } = await supabase.from("clientes").select("id,nome").in("id", ids);
+      const m = new Map((cs ?? []).map((c: any) => [c.id, c.nome]));
+      arr.forEach(o => { if (o.cliente_id) o.cliente_nome = m.get(o.cliente_id); });
+    }
+    setObras(arr);
   }
 
   return (
