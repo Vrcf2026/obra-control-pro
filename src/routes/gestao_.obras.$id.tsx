@@ -173,7 +173,30 @@ function Editor() {
         <h2 className="font-medium">Dados gerais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <F label="Nome"><input value={nome} onChange={e => setNome(e.target.value)} className="input" /></F>
-          <F label="Cliente"><input value={cliente} onChange={e => setCliente(e.target.value)} className="input" /></F>
+          <F label="Cliente">
+            <select value={clienteId} onChange={e => {
+              const v = e.target.value;
+              if (v === "__novo__") { setShowNovoCliente(true); return; }
+              setClienteId(v);
+              const c = clientes.find(x => x.id === v);
+              if (c) setCliente(c.nome);
+            }} className="input">
+              <option value="">— escolher cliente —</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              <option value="__novo__">+ Novo cliente</option>
+            </select>
+            {showNovoCliente && (
+              <div className="mt-2 p-3 border border-border rounded-md bg-muted/30 space-y-2">
+                <input value={novoNome} onChange={e => setNovoNome(e.target.value)} placeholder="Nome *" className="input" />
+                <input value={novoNif} onChange={e => setNovoNif(e.target.value)} placeholder="NIF" className="input" />
+                <input value={novoTel} onChange={e => setNovoTel(e.target.value)} placeholder="Telefone" className="input" />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowNovoCliente(false)} className="px-3 py-1.5 text-xs rounded-md border border-input">Cancelar</button>
+                  <button onClick={criarCliente} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground">Criar</button>
+                </div>
+              </div>
+            )}
+          </F>
           <F label="Localização"><input value={loc} onChange={e => setLoc(e.target.value)} className="input" /></F>
           <F label="Estado">
             <select value={estado} onChange={e => setEstado(e.target.value)} className="input">
