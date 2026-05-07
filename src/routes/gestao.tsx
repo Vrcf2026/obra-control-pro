@@ -51,16 +51,9 @@ function Gestao() {
           placeholder="🔍 Pesquisar obra ou cliente..."
           className="flex-1 border border-input rounded-md px-3 py-2 text-sm bg-background"
         />
-        <select
-          value={estado}
-          onChange={e => setEstado(e.target.value)}
-          className="border border-input rounded-md px-3 py-2 text-sm bg-background"
-        >
-          <option value="">Todos</option>
-          {Object.entries(estadoLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        {(q || estado) && (
-          <button onClick={() => { setQ(""); setEstado(""); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
+        <EstadoFilter value={estados} onChange={setEstados} />
+        {(q || estados.length !== ESTADOS_DEFAULT.length || !ESTADOS_DEFAULT.every(e => estados.includes(e))) && (
+          <button onClick={() => { setQ(""); setEstados(ESTADOS_DEFAULT); }} className="border border-input rounded-md px-3 py-2 text-sm">Limpar</button>
         )}
       </div>
 
