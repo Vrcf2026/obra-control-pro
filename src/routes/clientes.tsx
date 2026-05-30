@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Eye, Edit, X } from "lucide-react";
+import { Plus, Eye, Edit, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes")({
@@ -29,6 +29,15 @@ function Page() {
     const c: Record<string, number> = {};
     (ob ?? []).forEach((o: any) => { if (o.cliente_id) c[o.cliente_id] = (c[o.cliente_id] || 0) + 1; });
     setCounts(c);
+  }
+
+  async function apagar(c: Cliente) {
+    if ((counts[c.id] || 0) > 0) { toast.error("Cliente associado a obras — não pode ser eliminado"); return; }
+    if (!confirm(`Tem a certeza que pretende eliminar o cliente "${c.nome}"? Esta acção é irreversível.`)) return;
+    const { error } = await supabase.from("clientes").delete().eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente eliminado");
+    load();
   }
 
   const filtered = list.filter(c => {
@@ -80,6 +89,16 @@ function Page() {
                   {isAdmin && (
                     <button onClick={() => { setEditing(c); setShowForm(true); }} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                       <Edit className="w-4 h-4" /> Editar
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => apagar(c)}
+                      disabled={(counts[c.id] || 0) > 0}
+                      title={(counts[c.id] || 0) > 0 ? "Cliente associado a obras — não pode ser eliminado" : "Eliminar"}
+                      className={`text-sm inline-flex items-center gap-1 ${(counts[c.id] || 0) > 0 ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground hover:text-danger"}`}
+                    >
+                      <Trash2 className="w-4 h-4" /> Eliminar
                     </button>
                   )}
                 </td>
