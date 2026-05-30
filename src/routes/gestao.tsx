@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
-import { Plus, Users, Edit, X } from "lucide-react";
+import { Plus, Users, Edit, X, Trash2 } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ interface ObraUser { id: string; user_id: string; obra_id: string }
 function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
+  const [deleteFor, setDeleteFor] = useState<Obra | null>(null);
   const [q, setQ] = useState("");
   const [estados, setEstados] = useState<string[]>(ESTADOS_DEFAULT);
 
@@ -112,6 +113,9 @@ function Gestao() {
                   <Link to="/gestao/obras/$id" params={{ id: o.id }} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                     <Edit className="w-4 h-4" /> Editar
                   </Link>
+                  <button onClick={() => setDeleteFor(o)} className="text-sm text-muted-foreground hover:text-danger inline-flex items-center gap-1">
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
                 </td>
               </tr>
               ));
@@ -121,6 +125,7 @@ function Gestao() {
       </div>
 
       {assignFor && <AssignModal obra={assignFor} onClose={() => setAssignFor(null)} />}
+      {deleteFor && <DeleteModal obra={deleteFor} onClose={() => setDeleteFor(null)} onDeleted={() => { setDeleteFor(null); load(); }} />}
     </div>
   );
 }
@@ -174,6 +179,70 @@ function AssignModal({ obra, onClose }: { obra: Obra; onClose: () => void }) {
         </ul>
         <div className="flex justify-end pt-2">
           <button onClick={onClose} className="px-3 py-2 text-sm rounded-md border border-input">Fechar</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function DeleteModal({ obra, onClose, onDeleted }: { obra: Obra; onClose: () => void; onDeleted: () => void }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleDelete() {
+    if (confirm !== obra.nome) { toast.error("O nome da obra não corresponde"); return; }
+    if (!password) { toast.error("Introduza a sua password"); return; }
+    setLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData.user?.email;
+      if (!email) { toast.error("Sessão inválida"); setLoading(false); return; }
+
+      const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (authErr) { toast.error("Password incorrecta"); setLoading(false); return; }
+
+      // Cascade delete dependent rows (no FK cascades defined)
+      const { data: adendas } = await supabase.from("adendas").select("id").eq("obra_id", obra.id);
+      const adendaIds = (adendas ?? []).map((a: any) => a.id);
+      if (adendaIds.length) {
+        await supabase.from("adenda_rubricas").delete().in("adenda_id", adendaIds);
+      }
+      await Promise.all([
+        supabase.from("lancamentos").delete().eq("obra_id", obra.id),
+        supabase.from("rubricas").delete().eq("obra_id", obra.id),
+        supabase.from("obra_utilizadores").delete().eq("obra_id", obra.id),
+        supabase.from("adendas").delete().eq("obra_id", obra.id),
+        supabase.from("faturas_emitidas").delete().eq("obra_id", obra.id),
+        supabase.from("obra_estado_log").delete().eq("obra_id", obra.id),
+      ]);
+      const { error } = await supabase.from("obras").delete().eq("id", obra.id);
+      if (error) { toast.error(error.message); setLoading(false); return; }
+      toast.success("Obra eliminada");
+      onDeleted();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro a eliminar");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal title={`Eliminar obra — ${obra.nome}`} onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        <div className="p-3 rounded-md bg-danger/10 border border-danger/30 text-danger">
+          <strong>Atenção:</strong> esta acção é irreversível. Serão eliminados todos os lançamentos, rubricas, adendas, facturas e atribuições desta obra.
+        </div>
+        <Field label={`Para confirmar, escreva o nome da obra: "${obra.nome}"`}>
+          <input value={confirm} onChange={e => setConfirm(e.target.value)} className="w-full border border-input bg-background rounded-md px-3 py-2" />
+        </Field>
+        <Field label="A sua password">
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-input bg-background rounded-md px-3 py-2" autoComplete="current-password" />
+        </Field>
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} disabled={loading} className="px-3 py-2 text-sm rounded-md border border-input">Cancelar</button>
+          <button onClick={handleDelete} disabled={loading} className="px-3 py-2 text-sm rounded-md bg-danger text-white disabled:opacity-60">
+            {loading ? "A eliminar..." : "Eliminar definitivamente"}
+          </button>
         </div>
       </div>
     </Modal>
