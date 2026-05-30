@@ -31,6 +31,15 @@ function Page() {
     setCounts(c);
   }
 
+  async function apagar(c: Cliente) {
+    if ((counts[c.id] || 0) > 0) { toast.error("Cliente associado a obras — não pode ser eliminado"); return; }
+    if (!confirm(`Tem a certeza que pretende eliminar o cliente "${c.nome}"? Esta acção é irreversível.`)) return;
+    const { error } = await supabase.from("clientes").delete().eq("id", c.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente eliminado");
+    load();
+  }
+
   const filtered = list.filter(c => {
     const m = q.trim().toLowerCase();
     return !m || c.nome.toLowerCase().includes(m) || (c.nif || "").toLowerCase().includes(m);
