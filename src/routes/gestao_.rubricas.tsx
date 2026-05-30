@@ -133,7 +133,7 @@ function Page() {
                 <td className="p-2 text-right space-x-2 whitespace-nowrap">
                   <button onClick={() => { setEditId(r.id); setEditNome(r.nome); }} className="text-muted-foreground hover:text-foreground p-1" title="Editar"><Pencil className="w-4 h-4" /></button>
                   <button
-                    onClick={() => apagar(r)}
+                    onClick={() => pedirApagar(r)}
                     disabled={usados.has(r.nome)}
                     className={`p-1 ${usados.has(r.nome) ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground hover:text-danger"}`}
                     title={usados.has(r.nome) ? "Rubrica em uso" : "Apagar"}
@@ -147,6 +147,13 @@ function Page() {
           </tbody>
         </table>
       </div>
+      <PasswordConfirmDialog
+        open={!!delRub}
+        title={`Apagar rubrica padrão — ${delRub?.nome ?? ""}`}
+        description="Confirme com a sua password."
+        onClose={() => setDelRub(null)}
+        onConfirmed={apagarConfirmado}
+      />
     </div>
   );
 }
