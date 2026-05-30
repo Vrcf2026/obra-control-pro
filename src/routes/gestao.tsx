@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
-import { Plus, Users, Edit, X } from "lucide-react";
+import { Plus, Users, Edit, X, Trash2 } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 import { toast } from "sonner";
