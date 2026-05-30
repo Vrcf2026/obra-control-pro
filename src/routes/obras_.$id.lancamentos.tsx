@@ -7,10 +7,7 @@ import { eur } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
 import { ArrowLeft, Receipt, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/obras_/$id/lancamentos")({
   component: () => <Protected><Page /></Protected>,
@@ -251,29 +248,18 @@ function Page() {
         />
       )}
 
-      <AlertDialog open={!!delGrupo} onOpenChange={o => !o && setDelGrupo(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Apagar lançamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tens a certeza? Esta acção não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-danger text-white hover:bg-danger/90"
-              onClick={async () => {
-                if (!delGrupo) return;
-                const ids = delGrupo.linhas.map(l => l.id);
-                const { error } = await supabase.from("lancamentos").delete().in("id", ids);
-                setDelGrupo(null);
-                if (error) toast.error(error.message); else { toast.success("Lançamento apagado"); load(); }
-              }}
-            >Apagar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <PasswordConfirmDialog
+        open={!!delGrupo}
+        title="Apagar lançamento"
+        description="Esta acção é irreversível. Confirme com a sua password."
+        onClose={() => setDelGrupo(null)}
+        onConfirmed={async () => {
+          if (!delGrupo) return;
+          const ids = delGrupo.linhas.map(l => l.id);
+          const { error } = await supabase.from("lancamentos").delete().in("id", ids);
+          if (error) toast.error(error.message); else { toast.success("Lançamento apagado"); load(); }
+        }}
+      />
     </div>
   );
 }

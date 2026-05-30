@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/gestao_/rubricas")({
   component: () => <Protected allow={["admin"]}><Page /></Protected>,
@@ -16,6 +17,7 @@ function Page() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState("");
   const [usados, setUsados] = useState<Set<string>>(new Set());
+  const [delRub, setDelRub] = useState<Rub | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -54,10 +56,13 @@ function Page() {
     if (error) toast.error(error.message); else load();
   }
 
-  async function apagar(r: Rub) {
+  function pedirApagar(r: Rub) {
     if (usados.has(r.nome)) { toast.error("Rubrica em uso, não pode ser apagada"); return; }
-    if (!confirm("Apagar rubrica padrão?")) return;
-    const { error } = await supabase.from("rubricas_padrao").delete().eq("id", r.id);
+    setDelRub(r);
+  }
+  async function apagarConfirmado() {
+    if (!delRub) return;
+    const { error } = await supabase.from("rubricas_padrao").delete().eq("id", delRub.id);
     if (error) toast.error(error.message); else load();
   }
 
@@ -128,7 +133,7 @@ function Page() {
                 <td className="p-2 text-right space-x-2 whitespace-nowrap">
                   <button onClick={() => { setEditId(r.id); setEditNome(r.nome); }} className="text-muted-foreground hover:text-foreground p-1" title="Editar"><Pencil className="w-4 h-4" /></button>
                   <button
-                    onClick={() => apagar(r)}
+                    onClick={() => pedirApagar(r)}
                     disabled={usados.has(r.nome)}
                     className={`p-1 ${usados.has(r.nome) ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground hover:text-danger"}`}
                     title={usados.has(r.nome) ? "Rubrica em uso" : "Apagar"}
@@ -142,6 +147,13 @@ function Page() {
           </tbody>
         </table>
       </div>
+      <PasswordConfirmDialog
+        open={!!delRub}
+        title={`Apagar rubrica padrão — ${delRub?.nome ?? ""}`}
+        description="Confirme com a sua password."
+        onClose={() => setDelRub(null)}
+        onConfirmed={apagarConfirmado}
+      />
     </div>
   );
 }
