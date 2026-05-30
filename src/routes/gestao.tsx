@@ -185,5 +185,69 @@ function AssignModal({ obra, onClose }: { obra: Obra; onClose: () => void }) {
   );
 }
 
+function DeleteModal({ obra, onClose, onDeleted }: { obra: Obra; onClose: () => void; onDeleted: () => void }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleDelete() {
+    if (confirm !== obra.nome) { toast.error("O nome da obra não corresponde"); return; }
+    if (!password) { toast.error("Introduza a sua password"); return; }
+    setLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData.user?.email;
+      if (!email) { toast.error("Sessão inválida"); setLoading(false); return; }
+
+      const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (authErr) { toast.error("Password incorrecta"); setLoading(false); return; }
+
+      // Cascade delete dependent rows (no FK cascades defined)
+      const { data: adendas } = await supabase.from("adendas").select("id").eq("obra_id", obra.id);
+      const adendaIds = (adendas ?? []).map((a: any) => a.id);
+      if (adendaIds.length) {
+        await supabase.from("adenda_rubricas").delete().in("adenda_id", adendaIds);
+      }
+      await Promise.all([
+        supabase.from("lancamentos").delete().eq("obra_id", obra.id),
+        supabase.from("rubricas").delete().eq("obra_id", obra.id),
+        supabase.from("obra_utilizadores").delete().eq("obra_id", obra.id),
+        supabase.from("adendas").delete().eq("obra_id", obra.id),
+        supabase.from("faturas_emitidas").delete().eq("obra_id", obra.id),
+        supabase.from("obra_estado_log").delete().eq("obra_id", obra.id),
+      ]);
+      const { error } = await supabase.from("obras").delete().eq("id", obra.id);
+      if (error) { toast.error(error.message); setLoading(false); return; }
+      toast.success("Obra eliminada");
+      onDeleted();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro a eliminar");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal title={`Eliminar obra — ${obra.nome}`} onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        <div className="p-3 rounded-md bg-danger/10 border border-danger/30 text-danger">
+          <strong>Atenção:</strong> esta acção é irreversível. Serão eliminados todos os lançamentos, rubricas, adendas, facturas e atribuições desta obra.
+        </div>
+        <Field label={`Para confirmar, escreva o nome da obra: "${obra.nome}"`}>
+          <input value={confirm} onChange={e => setConfirm(e.target.value)} className="w-full border border-input bg-background rounded-md px-3 py-2" />
+        </Field>
+        <Field label="A sua password">
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-input bg-background rounded-md px-3 py-2" autoComplete="current-password" />
+        </Field>
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={onClose} disabled={loading} className="px-3 py-2 text-sm rounded-md border border-input">Cancelar</button>
+          <button onClick={handleDelete} disabled={loading} className="px-3 py-2 text-sm rounded-md bg-danger text-white disabled:opacity-60">
+            {loading ? "A eliminar..." : "Eliminar definitivamente"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // Re-export Field so other files can keep import
 export { Field };
