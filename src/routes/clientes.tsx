@@ -5,6 +5,7 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { Plus, Eye, Edit, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/clientes")({
   component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
@@ -20,6 +21,7 @@ function Page() {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Cliente | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [delCliente, setDelCliente] = useState<Cliente | null>(null);
 
   useEffect(() => { load(); }, []);
   async function load() {
@@ -31,10 +33,13 @@ function Page() {
     setCounts(c);
   }
 
-  async function apagar(c: Cliente) {
+  function pedirApagar(c: Cliente) {
     if ((counts[c.id] || 0) > 0) { toast.error("Cliente associado a obras — não pode ser eliminado"); return; }
-    if (!confirm(`Tem a certeza que pretende eliminar o cliente "${c.nome}"? Esta acção é irreversível.`)) return;
-    const { error } = await supabase.from("clientes").delete().eq("id", c.id);
+    setDelCliente(c);
+  }
+  async function apagarConfirmado() {
+    if (!delCliente) return;
+    const { error } = await supabase.from("clientes").delete().eq("id", delCliente.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Cliente eliminado");
     load();
@@ -93,7 +98,7 @@ function Page() {
                   )}
                   {isAdmin && (
                     <button
-                      onClick={() => apagar(c)}
+                      onClick={() => pedirApagar(c)}
                       disabled={(counts[c.id] || 0) > 0}
                       title={(counts[c.id] || 0) > 0 ? "Cliente associado a obras — não pode ser eliminado" : "Eliminar"}
                       className={`text-sm inline-flex items-center gap-1 ${(counts[c.id] || 0) > 0 ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground hover:text-danger"}`}
@@ -109,6 +114,13 @@ function Page() {
       </div>
 
       {showForm && <ClienteForm cliente={editing} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load(); }} />}
+      <PasswordConfirmDialog
+        open={!!delCliente}
+        title={`Eliminar cliente — ${delCliente?.nome ?? ""}`}
+        description="Esta acção é irreversível. Confirme com a sua password."
+        onClose={() => setDelCliente(null)}
+        onConfirmed={apagarConfirmado}
+      />
     </div>
   );
 }

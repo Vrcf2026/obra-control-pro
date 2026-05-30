@@ -54,10 +54,13 @@ function Page() {
     if (error) toast.error(error.message); else load();
   }
 
-  async function apagar(r: Rub) {
+  function pedirApagar(r: Rub) {
     if (usados.has(r.nome)) { toast.error("Rubrica em uso, não pode ser apagada"); return; }
-    if (!confirm("Apagar rubrica padrão?")) return;
-    const { error } = await supabase.from("rubricas_padrao").delete().eq("id", r.id);
+    setDelRub(r);
+  }
+  async function apagarConfirmado() {
+    if (!delRub) return;
+    const { error } = await supabase.from("rubricas_padrao").delete().eq("id", delRub.id);
     if (error) toast.error(error.message); else load();
   }
 
