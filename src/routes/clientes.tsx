@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Eye, Edit, X } from "lucide-react";
+import { Plus, Eye, Edit, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes")({
