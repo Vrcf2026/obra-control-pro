@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ObrasIdRouteImport } from './routes/obras.$id'
 import { Route as GestaoUtilizadoresRouteImport } from './routes/gestao_.utilizadores'
 import { Route as GestaoRubricasRouteImport } from './routes/gestao_.rubricas'
+import { Route as GestaoAuditoriaRouteImport } from './routes/gestao_.auditoria'
 import { Route as ClientesIdRouteImport } from './routes/clientes_.$id'
 import { Route as ObrasIdLancamentosRouteImport } from './routes/obras_.$id.lancamentos'
 import { Route as GestaoObrasIdRouteImport } from './routes/gestao_.obras.$id'
@@ -67,6 +68,11 @@ const GestaoRubricasRoute = GestaoRubricasRouteImport.update({
   path: '/gestao/rubricas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoAuditoriaRoute = GestaoAuditoriaRouteImport.update({
+  id: '/gestao_/auditoria',
+  path: '/gestao/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientesIdRoute = ClientesIdRouteImport.update({
   id: '/clientes_/$id',
   path: '/clientes/$id',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/minhas-obras': typeof MinhasObrasRoute
   '/relatorios': typeof RelatoriosRoute
   '/clientes/$id': typeof ClientesIdRoute
+  '/gestao/auditoria': typeof GestaoAuditoriaRoute
   '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/minhas-obras': typeof MinhasObrasRoute
   '/relatorios': typeof RelatoriosRoute
   '/clientes/$id': typeof ClientesIdRoute
+  '/gestao/auditoria': typeof GestaoAuditoriaRoute
   '/gestao/rubricas': typeof GestaoRubricasRoute
   '/gestao/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/minhas-obras': typeof MinhasObrasRoute
   '/relatorios': typeof RelatoriosRoute
   '/clientes_/$id': typeof ClientesIdRoute
+  '/gestao_/auditoria': typeof GestaoAuditoriaRoute
   '/gestao_/rubricas': typeof GestaoRubricasRoute
   '/gestao_/utilizadores': typeof GestaoUtilizadoresRoute
   '/obras/$id': typeof ObrasIdRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/minhas-obras'
     | '/relatorios'
     | '/clientes/$id'
+    | '/gestao/auditoria'
     | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/minhas-obras'
     | '/relatorios'
     | '/clientes/$id'
+    | '/gestao/auditoria'
     | '/gestao/rubricas'
     | '/gestao/utilizadores'
     | '/obras/$id'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/minhas-obras'
     | '/relatorios'
     | '/clientes_/$id'
+    | '/gestao_/auditoria'
     | '/gestao_/rubricas'
     | '/gestao_/utilizadores'
     | '/obras/$id'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   MinhasObrasRoute: typeof MinhasObrasRoute
   RelatoriosRoute: typeof RelatoriosRoute
   ClientesIdRoute: typeof ClientesIdRoute
+  GestaoAuditoriaRoute: typeof GestaoAuditoriaRoute
   GestaoRubricasRoute: typeof GestaoRubricasRoute
   GestaoUtilizadoresRoute: typeof GestaoUtilizadoresRoute
   ObrasIdRoute: typeof ObrasIdRoute
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoRubricasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/auditoria': {
+      id: '/gestao_/auditoria'
+      path: '/gestao/auditoria'
+      fullPath: '/gestao/auditoria'
+      preLoaderRoute: typeof GestaoAuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clientes_/$id': {
       id: '/clientes_/$id'
       path: '/clientes/$id'
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   MinhasObrasRoute: MinhasObrasRoute,
   RelatoriosRoute: RelatoriosRoute,
   ClientesIdRoute: ClientesIdRoute,
+  GestaoAuditoriaRoute: GestaoAuditoriaRoute,
   GestaoRubricasRoute: GestaoRubricasRoute,
   GestaoUtilizadoresRoute: GestaoUtilizadoresRoute,
   ObrasIdRoute: ObrasIdRoute,
