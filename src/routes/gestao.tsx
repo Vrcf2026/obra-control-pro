@@ -113,6 +113,9 @@ function Gestao() {
                   <Link to="/gestao/obras/$id" params={{ id: o.id }} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                     <Edit className="w-4 h-4" /> Editar
                   </Link>
+                  <button onClick={() => setDeleteFor(o)} className="text-sm text-muted-foreground hover:text-danger inline-flex items-center gap-1">
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
                 </td>
               </tr>
               ));
@@ -122,6 +125,7 @@ function Gestao() {
       </div>
 
       {assignFor && <AssignModal obra={assignFor} onClose={() => setAssignFor(null)} />}
+      {deleteFor && <DeleteModal obra={deleteFor} onClose={() => setDeleteFor(null)} onDeleted={() => { setDeleteFor(null); load(); }} />}
     </div>
   );
 }
