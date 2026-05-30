@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/gestao_/rubricas")({
   component: () => <Protected allow={["admin"]}><Page /></Protected>,
@@ -16,6 +17,7 @@ function Page() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState("");
   const [usados, setUsados] = useState<Set<string>>(new Set());
+  const [delRub, setDelRub] = useState<Rub | null>(null);
 
   useEffect(() => { load(); }, []);
 
