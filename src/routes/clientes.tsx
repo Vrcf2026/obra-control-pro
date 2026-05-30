@@ -82,6 +82,16 @@ function Page() {
                       <Edit className="w-4 h-4" /> Editar
                     </button>
                   )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => apagar(c)}
+                      disabled={(counts[c.id] || 0) > 0}
+                      title={(counts[c.id] || 0) > 0 ? "Cliente associado a obras — não pode ser eliminado" : "Eliminar"}
+                      className={`text-sm inline-flex items-center gap-1 ${(counts[c.id] || 0) > 0 ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground hover:text-danger"}`}
+                    >
+                      <Trash2 className="w-4 h-4" /> Eliminar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
