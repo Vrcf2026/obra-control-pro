@@ -197,7 +197,9 @@ function Detalhe() {
   const totAvulsas = avulsas.reduce((s, x) => s + x.valor, 0);
   const totGasto =
     rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0) + totAvulsas;
-  const totInternoBase = rubricas.reduce((s, r) => s + Number(r.orcamento_interno), 0);
+  const totInternoBase = rubricas
+    .filter((r) => !(r as any).parent_id)
+    .reduce((s, r) => s + Number(r.orcamento_interno), 0);
   const adIntPorAdenda = (adId: string) =>
     adRubs.filter((r) => r.adenda_id === adId).reduce((s, r) => s + Number(r.valor), 0);
   const adendasPrincipal = adendas.filter((a) => a.tipo === "principal");
@@ -222,6 +224,8 @@ function Detalhe() {
     { nome: string; orcInicial: number; adendas: number; gasto: number; rubricaIds: string[] }
   >();
   rubricas.forEach((r) => {
+    // Skip subrubricas — their gastos are already rolled up into the parent
+    if ((r as any).parent_id) return;
     const key = r.nome.trim().toLowerCase();
     const cur = consolidado.get(key) ?? { nome: r.nome, orcInicial: 0, adendas: 0, gasto: 0, rubricaIds: [] };
     cur.orcInicial += Number(r.orcamento_interno);
