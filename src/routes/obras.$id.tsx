@@ -140,15 +140,20 @@ function Detalhe() {
       if (x.adenda_rubrica_id)
         gastosAd.set(x.adenda_rubrica_id, (gastosAd.get(x.adenda_rubrica_id) ?? 0) + Number(x.valor));
     });
-    setRubricas(
-      (r ?? []).map((x) => ({
-        id: x.id,
-        nome: x.nome,
-        orcamento_interno: Number(x.orcamento_interno),
-        gasto: gastosRub.get(x.id) ?? 0,
-        parent_id: (x as any).parent_id ?? null,
-      })),
-    );
+    const rubricasList = (r ?? []).map((x) => ({
+      id: x.id,
+      nome: x.nome,
+      orcamento_interno: Number(x.orcamento_interno),
+      gasto: gastosRub.get(x.id) ?? 0,
+      parent_id: (x as any).parent_id ?? null,
+    }));
+    // Roll up subrubrica gastos into parent
+    rubricasList.forEach((sub) => {
+      if (!sub.parent_id) return;
+      const parent = rubricasList.find((p) => p.id === sub.parent_id);
+      if (parent) parent.gasto += sub.gasto;
+    });
+    setRubricas(rubricasList);
     const adArr = (a ?? []) as Adenda[];
     setAdendas(adArr);
     setFaturas(((f ?? []) as Fatura[]).map((x) => ({ ...x, valor: Number(x.valor) })));
