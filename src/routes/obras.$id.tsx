@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
@@ -388,9 +388,9 @@ function Detalhe() {
                 const subs = rubricas.filter((x) => r.rubricaIds.includes((x as any).parent_id ?? ""));
                 const hasSubs = subs.length > 0;
                 const isExpanded = expandedRubricas.has(r.nome);
-                return (
-                  <>
-                    <tr key={i} className="border-t border-border">
+               return (
+                  <React.Fragment key={i}>
+                    <tr className="border-t border-border">
                       <td className="p-3 font-medium">
                         <div className="flex items-center gap-1">
                           {hasSubs && (
@@ -457,7 +457,7 @@ function Detalhe() {
                           <td colSpan={2} />
                         </tr>
                       ))}
-                  </>
+                  </> </React.Fragment>
                 );
               })}
               {consolidadoArr.length === 0 && (
