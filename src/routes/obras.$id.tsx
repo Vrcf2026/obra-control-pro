@@ -457,7 +457,7 @@ function Detalhe() {
                           <td colSpan={2} />
                         </tr>
                       ))}
-                  </> </React.Fragment>
+                  </React.Fragment>
                 );
               })}
               {consolidadoArr.length === 0 && (
