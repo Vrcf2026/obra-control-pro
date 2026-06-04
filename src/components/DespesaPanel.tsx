@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { eur } from "@/lib/format";
@@ -11,12 +11,21 @@ interface Rubrica {
   origem: string;
   parent_id?: string | null;
 }
+interface SubOpcao {
+  id: string | null;
+  nome: string;
+}
 interface Linha {
   rubrica_id: string;
-  subrubrica: string;
+  sub_id: string;
+  sub_nome: string;
+  modo: "sem" | "existente" | "nova";
   valor: string;
   negativo: boolean;
 }
+
+const SEM_SUB = "__sem__";
+const NOVA_SUB = "__nova__";
 
 export function DespesaPanel({
   obraId,
@@ -30,17 +39,18 @@ export function DespesaPanel({
   onSaved: () => void;
 }) {
   const { user } = useAuth();
-
   const rubricasPai = rubricasInit.filter((r) => !r.parent_id);
 
-  const [subExistentes, setSubExistentes] = useState<Record<string, { id: string; nome: string }[]>>({});
+  const [subsPorPai, setSubsPorPai] = useState<Record<string, SubOpcao[]>>({});
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [fornecedor, setFornecedor] = useState("");
   const [descricao, setDescricao] = useState("");
   const [linhas, setLinhas] = useState<Linha[]>([
     {
       rubrica_id: rubricasPai[0]?.id ?? "",
-      subrubrica: "",
+      sub_id: "",
+      sub_nome: "",
+      modo: "sem",
       valor: "",
       negativo: false,
     },
@@ -48,21 +58,61 @@ export function DespesaPanel({
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    const parentIds = rubricasInit.filter((r) => !r.parent_id).map((r) => r.id);
-    if (parentIds.length === 0) return;
-    supabase
-      .from("rubricas")
-      .select("id,nome,parent_id")
-      .eq("obra_id", obraId)
-      .not("parent_id", "is", null)
-      .then(({ data }) => {
-        const map: Record<string, { id: string; nome: string }[]> = {};
-        (data ?? []).forEach((r: any) => {
-          if (!map[r.parent_id]) map[r.parent_id] = [];
-          map[r.parent_id].push({ id: r.id, nome: r.nome });
-        });
-        setSubExistentes(map);
+    (async () => {
+      const { data: padroes } = (await supabase
+        .from("rubricas_padrao")
+        .select("id,nome,parent_id")
+        .not("parent_id", "is", null)
+        .eq("ativo", true)) as any;
+
+      const { data: obraSubs } = (await supabase
+        .from("rubricas")
+        .select("id,nome,parent_id")
+        .eq("obra_id", obraId)
+        .not("parent_id", "is", null)) as any;
+
+      const nomePaiMap: Record<string, string> = {};
+      rubricasPai.forEach((r) => {
+        nomePaiMap[r.nome.trim().toLowerCase()] = r.id;
       });
+
+      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id))];
+      let nomePaiPadrao: Record<string, string> = {};
+      if (paiPadraoIds.length > 0) {
+        const { data: paisPadrao } = (await supabase
+          .from("rubricas_padrao")
+          .select("id,nome")
+          .in("id", paiPadraoIds)) as any;
+        (paisPadrao ?? []).forEach((p: any) => {
+          nomePaiPadrao[p.id] = p.nome;
+        });
+      }
+
+      const map: Record<string, SubOpcao[]> = {};
+
+      (padroes ?? []).forEach((p: any) => {
+        const nomePai = nomePaiPadrao[p.parent_id];
+        if (!nomePai) return;
+        const obraPaiId = nomePaiMap[nomePai.trim().toLowerCase()];
+        if (!obraPaiId) return;
+        if (!map[obraPaiId]) map[obraPaiId] = [];
+        if (!map[obraPaiId].find((x) => x.nome.toLowerCase() === p.nome.toLowerCase())) {
+          map[obraPaiId].push({ id: null, nome: p.nome });
+        }
+      });
+
+      (obraSubs ?? []).forEach((s: any) => {
+        if (!map[s.parent_id]) map[s.parent_id] = [];
+        const existing = map[s.parent_id].find((x) => x.nome.toLowerCase() === s.nome.toLowerCase());
+        if (existing) {
+          existing.id = s.id;
+        } else {
+          map[s.parent_id].push({ id: s.id, nome: s.nome });
+        }
+      });
+
+      setSubsPorPai(map);
+    })();
   }, [obraId]);
 
   function setLinha(i: number, patch: Partial<Linha>) {
@@ -70,7 +120,17 @@ export function DespesaPanel({
   }
 
   function addLinha() {
-    setLinhas((ls) => [...ls, { rubrica_id: rubricasPai[0]?.id ?? "", subrubrica: "", valor: "", negativo: false }]);
+    setLinhas((ls) => [
+      ...ls,
+      {
+        rubrica_id: rubricasPai[0]?.id ?? "",
+        sub_id: "",
+        sub_nome: "",
+        modo: "sem",
+        valor: "",
+        negativo: false,
+      },
+    ]);
     setTimeout(() => valorRefs.current[linhas.length]?.focus(), 50);
   }
 
@@ -91,22 +151,19 @@ export function DespesaPanel({
     return s + (l.negativo ? -v : v);
   }, 0);
 
-  async function getRubricaId(linha: Linha): Promise<string | null> {
-    const subNome = linha.subrubrica.trim();
-    if (!subNome) return linha.rubrica_id;
-
-    const existentes = subExistentes[linha.rubrica_id] ?? [];
-    const existente = existentes.find((s) => s.nome.trim().toLowerCase() === subNome.toLowerCase());
-    if (existente) return existente.id;
+  async function criarSubrubrica(parentId: string, nome: string): Promise<string | null> {
+    const { data: existe } = await supabase
+      .from("rubricas")
+      .select("id")
+      .eq("obra_id", obraId)
+      .eq("parent_id", parentId)
+      .ilike("nome", nome)
+      .maybeSingle();
+    if (existe) return existe.id;
 
     const { data, error } = await supabase
       .from("rubricas")
-      .insert({
-        obra_id: obraId,
-        nome: subNome,
-        orcamento_interno: 0,
-        parent_id: linha.rubrica_id,
-      } as any)
+      .insert({ obra_id: obraId, nome, orcamento_interno: 0, parent_id: parentId } as any)
       .select("id")
       .maybeSingle();
 
@@ -115,12 +172,32 @@ export function DespesaPanel({
       return null;
     }
 
-    setSubExistentes((prev) => ({
+    setSubsPorPai((prev) => ({
       ...prev,
-      [linha.rubrica_id]: [...(prev[linha.rubrica_id] ?? []), { id: data.id, nome: subNome }],
+      [parentId]: [...(prev[parentId] ?? []), { id: data.id, nome }],
     }));
 
     return data.id;
+  }
+
+  async function getRubricaIdParaLinha(linha: Linha): Promise<string | null> {
+    if (linha.modo === "sem") return linha.rubrica_id;
+
+    if (linha.modo === "existente") {
+      const subs = subsPorPai[linha.rubrica_id] ?? [];
+      const sub = subs.find((s) => s.id === linha.sub_id || s.nome === linha.sub_id);
+      if (sub?.id) return sub.id;
+      const nome = sub?.nome ?? linha.sub_id;
+      return await criarSubrubrica(linha.rubrica_id, nome);
+    }
+
+    if (linha.modo === "nova") {
+      const nome = linha.sub_nome.trim();
+      if (!nome) return linha.rubrica_id;
+      return await criarSubrubrica(linha.rubrica_id, nome);
+    }
+
+    return linha.rubrica_id;
   }
 
   async function save() {
@@ -133,7 +210,7 @@ export function DespesaPanel({
 
     const rows: any[] = [];
     for (const l of valid) {
-      const rubricaId = await getRubricaId(l);
+      const rubricaId = await getRubricaIdParaLinha(l);
       if (!rubricaId) return;
       rows.push({
         obra_id: obraId,
@@ -150,8 +227,7 @@ export function DespesaPanel({
     if (error) {
       toast.error(error.message);
     } else {
-      const temNegativo = valid.some((l) => l.negativo);
-      toast.success(temNegativo ? "Nota de crédito registada" : "Despesa registada");
+      toast.success(valid.some((l) => l.negativo) ? "Nota de crédito registada" : "Despesa registada");
       onSaved();
     }
   }
@@ -185,13 +261,16 @@ export function DespesaPanel({
           <div className="space-y-3">
             <p className="text-sm font-medium">Linhas</p>
             {linhas.map((l, i) => {
-              const sugsub = subExistentes[l.rubrica_id] ?? [];
+              const subs = subsPorPai[l.rubrica_id] ?? [];
+              const nomePai = rubricasPai.find((r) => r.id === l.rubrica_id)?.nome ?? "";
               return (
                 <div key={i} className="rounded-md border border-border p-3 space-y-2 bg-muted/20">
                   <div className="flex gap-2 items-center">
                     <select
                       value={l.rubrica_id}
-                      onChange={(e) => setLinha(i, { rubrica_id: e.target.value, subrubrica: "" })}
+                      onChange={(e) =>
+                        setLinha(i, { rubrica_id: e.target.value, sub_id: "", sub_nome: "", modo: "sem" })
+                      }
                       className="flex-1 inp"
                     >
                       {rubricasPai.map((r) => (
@@ -203,7 +282,7 @@ export function DespesaPanel({
                     <button
                       type="button"
                       onClick={() => setLinha(i, { negativo: !l.negativo })}
-                      title={l.negativo ? "Nota de crédito — clique para reverter" : "Marcar como nota de crédito"}
+                      title={l.negativo ? "Cancelar nota de crédito" : "Marcar como nota de crédito"}
                       className={`p-1.5 rounded-md border shrink-0 ${
                         l.negativo
                           ? "border-red-500 bg-red-50 text-red-600 dark:bg-red-950"
@@ -222,28 +301,54 @@ export function DespesaPanel({
 
                   <div className="flex items-center gap-2 pl-1">
                     <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <input
-                      list={`sub-${i}`}
-                      value={l.subrubrica}
-                      onChange={(e) => setLinha(i, { subrubrica: e.target.value })}
-                      placeholder="Subcategoria (opcional) — ex: Cimento, Betão..."
+                    <select
+                      value={l.modo === "existente" ? l.sub_id : l.modo === "nova" ? NOVA_SUB : SEM_SUB}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === SEM_SUB) setLinha(i, { modo: "sem", sub_id: "", sub_nome: "" });
+                        else if (v === NOVA_SUB) setLinha(i, { modo: "nova", sub_id: "", sub_nome: "" });
+                        else setLinha(i, { modo: "existente", sub_id: v, sub_nome: "" });
+                      }}
                       className="flex-1 inp text-sm"
-                    />
-                    <datalist id={`sub-${i}`}>
-                      {sugsub.map((s) => (
-                        <option key={s.id} value={s.nome} />
+                    >
+                      <option value={SEM_SUB}>— Sem subcategoria —</option>
+                      {subs.map((s, si) => (
+                        <option key={si} value={s.id ?? s.nome}>
+                          {s.nome}
+                        </option>
                       ))}
-                    </datalist>
+                      <option value={NOVA_SUB}>+ Nova subcategoria...</option>
+                    </select>
                   </div>
+
+                  {l.modo === "nova" && (
+                    <div className="pl-5">
+                      <input
+                        autoFocus
+                        value={l.sub_nome}
+                        onChange={(e) => setLinha(i, { sub_nome: e.target.value })}
+                        placeholder="Nome da nova subcategoria..."
+                        className="inp text-sm"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground pl-1 flex-1">
-                      {l.subrubrica.trim() ? (
+                      {l.modo === "sem" ? (
+                        <span className="text-muted-foreground/60">
+                          Desconta directamente em <strong>{nomePai}</strong>
+                        </span>
+                      ) : l.modo === "existente" ? (
                         <>
-                          Desconta em <strong>{rubricasPai.find((r) => r.id === l.rubrica_id)?.nome}</strong>
+                          Subcategoria de <strong>{nomePai}</strong>
+                        </>
+                      ) : l.sub_nome.trim() ? (
+                        <>
+                          Nova subcategoria de <strong>{nomePai}</strong>
                         </>
                       ) : (
-                        <span className="text-muted-foreground/60">Desconta directamente na rubrica</span>
+                        <span className="text-muted-foreground/60">Escreve o nome acima</span>
                       )}
                     </span>
                     <input
