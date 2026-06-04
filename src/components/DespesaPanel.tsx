@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { eur } from "@/lib/format";
-import { Plus, X, Minus, ChevronRight } from "lucide-react";
+import { Plus, X, Minus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Rubrica {
@@ -18,7 +18,7 @@ interface SubOpcao {
 interface Linha {
   rubrica_id: string;
   sub_id: string;
-  sub_nome: string;
+  sub_nome_nova: string;
   modo: "sem" | "existente" | "nova";
   valor: string;
   negativo: boolean;
@@ -49,13 +49,14 @@ export function DespesaPanel({
     {
       rubrica_id: rubricasPai[0]?.id ?? "",
       sub_id: "",
-      sub_nome: "",
+      sub_nome_nova: "",
       modo: "sem",
       valor: "",
       negativo: false,
     },
   ]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const subNovaRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -76,7 +77,7 @@ export function DespesaPanel({
         nomePaiMap[r.nome.trim().toLowerCase()] = r.id;
       });
 
-      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id as string))] as string[];
+      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id))];
       let nomePaiPadrao: Record<string, string> = {};
       if (paiPadraoIds.length > 0) {
         const { data: paisPadrao } = (await supabase
@@ -89,28 +90,21 @@ export function DespesaPanel({
       }
 
       const map: Record<string, SubOpcao[]> = {};
-
       (padroes ?? []).forEach((p: any) => {
         const nomePai = nomePaiPadrao[p.parent_id];
         if (!nomePai) return;
         const obraPaiId = nomePaiMap[nomePai.trim().toLowerCase()];
         if (!obraPaiId) return;
         if (!map[obraPaiId]) map[obraPaiId] = [];
-        if (!map[obraPaiId].find((x) => x.nome.toLowerCase() === p.nome.toLowerCase())) {
+        if (!map[obraPaiId].find((x) => x.nome.toLowerCase() === p.nome.toLowerCase()))
           map[obraPaiId].push({ id: null, nome: p.nome });
-        }
       });
-
       (obraSubs ?? []).forEach((s: any) => {
         if (!map[s.parent_id]) map[s.parent_id] = [];
         const existing = map[s.parent_id].find((x) => x.nome.toLowerCase() === s.nome.toLowerCase());
-        if (existing) {
-          existing.id = s.id;
-        } else {
-          map[s.parent_id].push({ id: s.id, nome: s.nome });
-        }
+        if (existing) existing.id = s.id;
+        else map[s.parent_id].push({ id: s.id, nome: s.nome });
       });
-
       setSubsPorPai(map);
     })();
   }, [obraId]);
@@ -125,7 +119,7 @@ export function DespesaPanel({
       {
         rubrica_id: rubricasPai[0]?.id ?? "",
         sub_id: "",
-        sub_nome: "",
+        sub_nome_nova: "",
         modo: "sem",
         valor: "",
         negativo: false,
@@ -135,6 +129,7 @@ export function DespesaPanel({
   }
 
   function removeLinha(i: number) {
+    if (linhas.length === 1) return;
     setLinhas((ls) => ls.filter((_, idx) => idx !== i));
   }
 
@@ -152,10 +147,10 @@ export function DespesaPanel({
   }, 0);
 
   async function criarSubrubrica(parentId: string, nome: string): Promise<string | null> {
-    const { data: existe } = await (supabase
+    const { data: existe } = await supabase
       .from("rubricas")
       .select("id")
-      .eq("obra_id", obraId) as any)
+      .eq("obra_id", obraId)
       .eq("parent_id", parentId)
       .ilike("nome", nome)
       .maybeSingle();
@@ -168,7 +163,7 @@ export function DespesaPanel({
       .maybeSingle();
 
     if (error || !data) {
-      toast.error("Erro ao criar subrubrica: " + (error?.message ?? ""));
+      toast.error("Erro ao criar subcategoria: " + (error?.message ?? ""));
       return null;
     }
 
@@ -176,27 +171,22 @@ export function DespesaPanel({
       ...prev,
       [parentId]: [...(prev[parentId] ?? []), { id: data.id, nome }],
     }));
-
     return data.id;
   }
 
-  async function getRubricaIdParaLinha(linha: Linha): Promise<string | null> {
+  async function getRubricaId(linha: Linha): Promise<string | null> {
     if (linha.modo === "sem") return linha.rubrica_id;
-
     if (linha.modo === "existente") {
       const subs = subsPorPai[linha.rubrica_id] ?? [];
       const sub = subs.find((s) => s.id === linha.sub_id || s.nome === linha.sub_id);
       if (sub?.id) return sub.id;
-      const nome = sub?.nome ?? linha.sub_id;
-      return await criarSubrubrica(linha.rubrica_id, nome);
+      return await criarSubrubrica(linha.rubrica_id, sub?.nome ?? linha.sub_id);
     }
-
     if (linha.modo === "nova") {
-      const nome = linha.sub_nome.trim();
+      const nome = linha.sub_nome_nova.trim();
       if (!nome) return linha.rubrica_id;
       return await criarSubrubrica(linha.rubrica_id, nome);
     }
-
     return linha.rubrica_id;
   }
 
@@ -210,7 +200,7 @@ export function DespesaPanel({
 
     const rows: any[] = [];
     for (const l of valid) {
-      const rubricaId = await getRubricaIdParaLinha(l);
+      const rubricaId = await getRubricaId(l);
       if (!rubricaId) return;
       rows.push({
         obra_id: obraId,
@@ -224,9 +214,8 @@ export function DespesaPanel({
     }
 
     const { error } = await supabase.from("lancamentos").insert(rows);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) toast.error(error.message);
+    else {
       toast.success(valid.some((l) => l.negativo) ? "Nota de crédito registada" : "Despesa registada");
       onSaved();
     }
@@ -258,20 +247,29 @@ export function DespesaPanel({
             <input value={descricao} onChange={(e) => setDescricao(e.target.value)} className="inp" />
           </Field>
 
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Linhas</p>
+          <div className="space-y-1">
+            <div
+              className="grid gap-1 text-xs text-muted-foreground px-1 pb-1"
+              style={{ gridTemplateColumns: "1fr 1fr 90px 28px 28px" }}
+            >
+              <span>Rubrica</span>
+              <span>Subcategoria</span>
+              <span className="text-right">Valor (€)</span>
+              <span></span>
+              <span></span>
+            </div>
+
             {linhas.map((l, i) => {
               const subs = subsPorPai[l.rubrica_id] ?? [];
-              const nomePai = rubricasPai.find((r) => r.id === l.rubrica_id)?.nome ?? "";
               return (
-                <div key={i} className="rounded-md border border-border p-3 space-y-2 bg-muted/20">
-                  <div className="flex gap-2 items-center">
+                <div key={i} className="space-y-0.5">
+                  <div className="grid gap-1 items-center" style={{ gridTemplateColumns: "1fr 1fr 90px 28px 28px" }}>
                     <select
                       value={l.rubrica_id}
                       onChange={(e) =>
-                        setLinha(i, { rubrica_id: e.target.value, sub_id: "", sub_nome: "", modo: "sem" })
+                        setLinha(i, { rubrica_id: e.target.value, sub_id: "", sub_nome_nova: "", modo: "sem" })
                       }
-                      className="flex-1 inp"
+                      className="inp-sm"
                     >
                       {rubricasPai.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -279,78 +277,47 @@ export function DespesaPanel({
                         </option>
                       ))}
                     </select>
-                    <button
-                      type="button"
-                      onClick={() => setLinha(i, { negativo: !l.negativo })}
-                      title={l.negativo ? "Cancelar nota de crédito" : "Marcar como nota de crédito"}
-                      className={`p-1.5 rounded-md border shrink-0 ${
-                        l.negativo
-                          ? "border-red-500 bg-red-50 text-red-600 dark:bg-red-950"
-                          : "border-border text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => removeLinha(i)}
-                      className="text-muted-foreground hover:text-red-500 shrink-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
 
-                  <div className="flex items-center gap-2 pl-1">
-                    <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <select
-                      value={l.modo === "existente" ? l.sub_id : l.modo === "nova" ? NOVA_SUB : SEM_SUB}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v === SEM_SUB) setLinha(i, { modo: "sem", sub_id: "", sub_nome: "" });
-                        else if (v === NOVA_SUB) setLinha(i, { modo: "nova", sub_id: "", sub_nome: "" });
-                        else setLinha(i, { modo: "existente", sub_id: v, sub_nome: "" });
-                      }}
-                      className="flex-1 inp text-sm"
-                    >
-                      <option value={SEM_SUB}>— Sem subcategoria —</option>
-                      {subs.map((s, si) => (
-                        <option key={si} value={s.id ?? s.nome}>
-                          {s.nome}
-                        </option>
-                      ))}
-                      <option value={NOVA_SUB}>+ Nova subcategoria...</option>
-                    </select>
-                  </div>
-
-                  {l.modo === "nova" && (
-                    <div className="pl-5">
+                    {l.modo === "nova" ? (
                       <input
+                        ref={(el) => {
+                          subNovaRefs.current[i] = el;
+                        }}
                         autoFocus
-                        value={l.sub_nome}
-                        onChange={(e) => setLinha(i, { sub_nome: e.target.value })}
-                        placeholder="Nome da nova subcategoria..."
-                        className="inp text-sm"
+                        value={l.sub_nome_nova}
+                        onChange={(e) => setLinha(i, { sub_nome_nova: e.target.value })}
+                        onBlur={() => {
+                          if (!l.sub_nome_nova.trim()) setLinha(i, { modo: "sem" });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setLinha(i, { modo: "sem", sub_nome_nova: "" });
+                        }}
+                        placeholder="Nome..."
+                        className="inp-sm"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <select
+                        value={l.modo === "existente" ? l.sub_id : SEM_SUB}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === SEM_SUB) setLinha(i, { modo: "sem", sub_id: "", sub_nome_nova: "" });
+                          else if (v === NOVA_SUB) {
+                            setLinha(i, { modo: "nova", sub_id: "", sub_nome_nova: "" });
+                            setTimeout(() => subNovaRefs.current[i]?.focus(), 50);
+                          } else setLinha(i, { modo: "existente", sub_id: v, sub_nome_nova: "" });
+                        }}
+                        className="inp-sm"
+                      >
+                        <option value={SEM_SUB}>— Nenhuma —</option>
+                        {subs.map((s, si) => (
+                          <option key={si} value={s.id ?? s.nome}>
+                            {s.nome}
+                          </option>
+                        ))}
+                        <option value={NOVA_SUB}>+ Nova...</option>
+                      </select>
+                    )}
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground pl-1 flex-1">
-                      {l.modo === "sem" ? (
-                        <span className="text-muted-foreground/60">
-                          Desconta directamente em <strong>{nomePai}</strong>
-                        </span>
-                      ) : l.modo === "existente" ? (
-                        <>
-                          Subcategoria de <strong>{nomePai}</strong>
-                        </>
-                      ) : l.sub_nome.trim() ? (
-                        <>
-                          Nova subcategoria de <strong>{nomePai}</strong>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground/60">Escreve o nome acima</span>
-                      )}
-                    </span>
                     <input
                       ref={(el) => {
                         valorRefs.current[i] = el;
@@ -362,27 +329,55 @@ export function DespesaPanel({
                       value={l.valor}
                       onChange={(e) => setLinha(i, { valor: e.target.value })}
                       onKeyDown={(e) => onValorKey(e, i)}
-                      className={`w-32 inp text-right ${l.negativo ? "text-red-600 border-red-400" : ""}`}
+                      className={`inp-sm text-right ${l.negativo ? "text-red-600 border-red-400" : ""}`}
                     />
+
+                    <button
+                      type="button"
+                      onClick={() => setLinha(i, { negativo: !l.negativo })}
+                      title={l.negativo ? "Cancelar nota de crédito" : "Nota de crédito (negativo)"}
+                      className={`h-8 w-7 rounded border flex items-center justify-center shrink-0 ${
+                        l.negativo
+                          ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => removeLinha(i)}
+                      disabled={linhas.length === 1}
+                      className="h-8 w-7 flex items-center justify-center text-muted-foreground hover:text-red-500 disabled:opacity-30"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
-                  {l.negativo && (
-                    <p className="text-xs text-red-500 pl-1">Nota de crédito — será registada como valor negativo</p>
+                  {(l.modo !== "sem" || l.negativo) && (
+                    <div className="flex gap-3 px-1 text-xs text-muted-foreground">
+                      {l.modo !== "sem" && (
+                        <span>
+                          ↳ desconta em <strong>{rubricasPai.find((r) => r.id === l.rubrica_id)?.nome}</strong>
+                        </span>
+                      )}
+                      {l.negativo && <span className="text-red-500">nota de crédito</span>}
+                    </div>
                   )}
                 </div>
               );
             })}
 
-            <button onClick={addLinha} className="text-sm text-primary inline-flex items-center gap-1">
+            <button onClick={addLinha} className="text-sm text-primary inline-flex items-center gap-1 pt-2">
               <Plus className="w-4 h-4" /> Adicionar linha
             </button>
           </div>
 
           <div
-            className={`flex justify-between items-center border-t border-border pt-3 ${total < 0 ? "text-red-500" : ""}`}
+            className={`flex justify-between items-center border-t border-border pt-3 font-medium ${total < 0 ? "text-red-500" : ""}`}
           >
-            <span className="text-sm text-muted-foreground">Total</span>
-            <span className="text-lg font-semibold tabular-nums">{eur(total)}</span>
+            <span className="text-sm">Total</span>
+            <span className="tabular-nums">{eur(total)}</span>
           </div>
         </div>
 
@@ -401,7 +396,11 @@ export function DespesaPanel({
           </button>
         </div>
       </div>
-      <style>{`.inp{width:100%;border:1px solid var(--border);background:var(--background);border-radius:6px;padding:8px 10px;font-size:14px;outline:none}`}</style>
+      <style>{`
+        .inp{width:100%;border:1px solid var(--border);background:var(--background);border-radius:6px;padding:8px 10px;font-size:14px;outline:none}
+        .inp-sm{width:100%;border:1px solid var(--border);background:var(--background);border-radius:6px;padding:5px 8px;font-size:13px;outline:none;height:32px}
+        .inp:focus,.inp-sm:focus{border-color:var(--primary)}
+      `}</style>
     </div>
   );
 }
