@@ -76,7 +76,7 @@ export function DespesaPanel({
         nomePaiMap[r.nome.trim().toLowerCase()] = r.id;
       });
 
-      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id))];
+      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id as string))] as string[];
       let nomePaiPadrao: Record<string, string> = {};
       if (paiPadraoIds.length > 0) {
         const { data: paisPadrao } = (await supabase
@@ -152,10 +152,10 @@ export function DespesaPanel({
   }, 0);
 
   async function criarSubrubrica(parentId: string, nome: string): Promise<string | null> {
-    const { data: existe } = await supabase
+    const { data: existe } = await (supabase
       .from("rubricas")
       .select("id")
-      .eq("obra_id", obraId)
+      .eq("obra_id", obraId) as any)
       .eq("parent_id", parentId)
       .ilike("nome", nome)
       .maybeSingle();

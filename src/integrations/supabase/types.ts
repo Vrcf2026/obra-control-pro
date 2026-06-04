@@ -325,6 +325,7 @@ export type Database = {
           localizacao: string | null
           nome: string
           orcamento_cliente: number
+          prazo_dias: number | null
         }
         Insert: {
           cliente: string
@@ -337,6 +338,7 @@ export type Database = {
           localizacao?: string | null
           nome: string
           orcamento_cliente?: number
+          prazo_dias?: number | null
         }
         Update: {
           cliente?: string
@@ -349,6 +351,7 @@ export type Database = {
           localizacao?: string | null
           nome?: string
           orcamento_cliente?: number
+          prazo_dias?: number | null
         }
         Relationships: [
           {
@@ -388,6 +391,7 @@ export type Database = {
           nome: string
           obra_id: string
           orcamento_interno: number
+          parent_id: string | null
         }
         Insert: {
           created_at?: string
@@ -395,6 +399,7 @@ export type Database = {
           nome: string
           obra_id: string
           orcamento_interno?: number
+          parent_id?: string | null
         }
         Update: {
           created_at?: string
@@ -402,6 +407,7 @@ export type Database = {
           nome?: string
           obra_id?: string
           orcamento_interno?: number
+          parent_id?: string | null
         }
         Relationships: [
           {
@@ -409,6 +415,13 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubricas_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "rubricas"
             referencedColumns: ["id"]
           },
         ]
@@ -420,6 +433,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          parent_id: string | null
         }
         Insert: {
           ativo?: boolean
@@ -427,6 +441,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          parent_id?: string | null
         }
         Update: {
           ativo?: boolean
@@ -434,8 +449,17 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          parent_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rubricas_padrao_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "rubricas_padrao"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
