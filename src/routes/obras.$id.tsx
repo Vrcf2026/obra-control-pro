@@ -100,6 +100,7 @@ function Detalhe() {
   const [estadoLog, setEstadoLog] = useState<EstadoLog[]>([]);
   const [logOpen, setLogOpen] = useState(false);
   const [delFatId, setDelFatId] = useState<string | null>(null);
+  const [expandedRubricas, setExpandedRubricas] = useState<Set<string>>(new Set());
   const [editFat, setEditFat] = useState<Fatura | null>(null);
   const [avulsas, setAvulsas] = useState<
     Array<{
@@ -384,20 +385,79 @@ function Detalhe() {
                 const total = r.orcInicial + r.adendas;
                 const desvio = total - r.gasto;
                 const cons = total > 0 ? (r.gasto / total) * 100 : 0;
+                const subs = rubricas.filter((x) => r.rubricaIds.includes((x as any).parent_id ?? ""));
+                const hasSubs = subs.length > 0;
+                const isExpanded = expandedRubricas.has(r.nome);
                 return (
-                  <tr key={i} className="border-t border-border">
-                    <td className="p-3 font-medium">{r.nome}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(r.orcInicial)}</td>
-                    <td className="p-3 text-right tabular-nums text-primary">
-                      {r.adendas > 0 ? `+${eur(r.adendas)}` : "—"}
-                    </td>
-                    <td className="p-3 text-right tabular-nums font-medium">{eur(total)}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(r.gasto)}</td>
-                    <td className={`p-3 text-right tabular-nums ${desvio < 0 ? "text-danger" : "text-success"}`}>
-                      {eur(desvio)}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">{cons.toFixed(0)}%</td>
-                  </tr>
+                  <>
+                    <tr key={i} className="border-t border-border">
+                      <td className="p-3 font-medium">
+                        <div className="flex items-center gap-1">
+                          {hasSubs && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedRubricas((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(r.nome)) next.delete(r.nome);
+                                  else next.add(r.nome);
+                                  return next;
+                                })
+                              }
+                              className="text-muted-foreground hover:text-foreground transition-transform"
+                              style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
+                          )}
+                          {!hasSubs && <span className="w-[14px] inline-block" />}
+                          {r.nome}
+                        </div>
+                      </td>
+                      <td className="p-3 text-right tabular-nums">{eur(r.orcInicial)}</td>
+                      <td className="p-3 text-right tabular-nums text-primary">
+                        {r.adendas > 0 ? `+${eur(r.adendas)}` : "—"}
+                      </td>
+                      <td className="p-3 text-right tabular-nums font-medium">{eur(total)}</td>
+                      <td className="p-3 text-right tabular-nums">{eur(r.gasto)}</td>
+                      <td className={`p-3 text-right tabular-nums ${desvio < 0 ? "text-danger" : "text-success"}`}>
+                        {eur(desvio)}
+                      </td>
+                      <td className="p-3 text-right tabular-nums">{cons.toFixed(0)}%</td>
+                    </tr>
+                    {hasSubs &&
+                      isExpanded &&
+                      subs.map((sub) => (
+                        <tr key={sub.id} className="border-t border-border bg-muted/20">
+                          <td className="p-2 pl-8 text-sm text-muted-foreground flex items-center gap-1">
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                            {sub.nome}
+                          </td>
+                          <td colSpan={4} className="p-2 text-right tabular-nums text-sm">
+                            {eur(sub.gasto)}
+                          </td>
+                          <td colSpan={2} />
+                        </tr>
+                      ))}
+                  </>
                 );
               })}
               {consolidadoArr.length === 0 && (
