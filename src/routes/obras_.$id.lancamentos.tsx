@@ -361,23 +361,27 @@ function EditPanel({
     const ops: Promise<any>[] = [];
     if (deletedIds.size > 0) {
       ops.push(
-        supabase
-          .from("lancamentos")
-          .delete()
-          .in("id", [...deletedIds]),
+        Promise.resolve(
+          supabase
+            .from("lancamentos")
+            .delete()
+            .in("id", [...deletedIds]),
+        ),
       );
     }
     linhasActivas.forEach((l) => {
       ops.push(
-        supabase
-          .from("lancamentos")
-          .update({
-            data,
-            fornecedor: fornecedor || null,
-            descricao,
-            valor: Number(valores[l.id]) || 0,
-          })
-          .eq("id", l.id),
+        Promise.resolve(
+          supabase
+            .from("lancamentos")
+            .update({
+              data,
+              fornecedor: fornecedor || null,
+              descricao,
+              valor: Number(valores[l.id]) || 0,
+            })
+            .eq("id", l.id),
+        ),
       );
     });
     const results = await Promise.all(ops);

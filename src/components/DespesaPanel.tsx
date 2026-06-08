@@ -77,7 +77,7 @@ export function DespesaPanel({
         nomePaiMap[r.nome.trim().toLowerCase()] = r.id;
       });
 
-      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id))];
+      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id as string))] as string[];
       let nomePaiPadrao: Record<string, string> = {};
       if (paiPadraoIds.length > 0) {
         const { data: paisPadrao } = (await supabase
