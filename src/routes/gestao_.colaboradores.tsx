@@ -131,7 +131,11 @@ function Page() {
                   </>
                 ) : (
                   <>
-                    <td className="p-3 font-medium">{r.nome}</td>
+                    <td className="p-3 font-medium">
+                      <Link to="/gestao/colaboradores/$id" params={{ id: r.id }} className="hover:underline text-primary">
+                        {r.nome}
+                      </Link>
+                    </td>
                     <td className="p-3 text-muted-foreground">{r.cargo || "—"}</td>
                     <td className="p-3 text-muted-foreground">{r.email || "—"}</td>
                     <td className="p-3 text-muted-foreground">{r.telefone || "—"}</td>
