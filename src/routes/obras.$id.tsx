@@ -63,6 +63,8 @@ interface Obra {
   data_inicio: string | null;
   data_fim_previsto: string | null;
   orcamento_cliente: number;
+  responsavel_cliente: string | null;
+  responsavel_interno_id: string | null;
 }
 interface EstadoLog {
   id: string;
@@ -271,6 +273,7 @@ function Detalhe() {
               {obra.localizacao && ` · ${obra.localizacao}`}
               {obra.data_inicio && ` · ${obra.data_inicio}`}
               {obra.data_fim_previsto && ` → ${obra.data_fim_previsto}`}
+              {(obra as any).responsavel_cliente && ` · Resp. cliente: ${(obra as any).responsavel_cliente}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
