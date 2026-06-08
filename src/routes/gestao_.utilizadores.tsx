@@ -7,6 +7,7 @@ import type { Role } from "@/hooks/use-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { createUser, updateUser, deleteUser } from "@/lib/users.functions";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/gestao_/utilizadores")({
   component: () => <Protected allow={["admin"]}><Utilizadores /></Protected>,
@@ -22,6 +23,7 @@ function Utilizadores() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Row | null>(null);
   const [creating, setCreating] = useState(false);
+  const [delUser, setDelUser] = useState<Row | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -41,10 +43,18 @@ function Utilizadores() {
     setLoading(false);
   }
 
-  async function handleDelete(r: Row) {
-    if (!confirm(`Eliminar utilizador "${r.nome || r.email}"? Esta acção é irreversível.`)) return;
+  async function pedirApagar(r: Row) {
+    if (r.id === user?.id) { toast.error("Não podes eliminar o teu próprio utilizador"); return; }
+    // Check if user has lancamentos or is responsible for obras
+    const { data: lans } = await supabase.from("lancamentos").select("id").eq("registado_por", r.id).limit(1);
+    if (lans && lans.length > 0) { toast.error("Utilizador tem lançamentos registados — não pode ser eliminado"); return; }
+    setDelUser(r);
+  }
+
+  async function confirmarApagar() {
+    if (!delUser) return;
     try {
-      await deleteUser({ data: { id: r.id } });
+      await deleteUser({ data: { id: delUser.id } });
       toast.success("Utilizador eliminado");
       load();
     } catch (e) {
@@ -95,7 +105,7 @@ function Utilizadores() {
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(r)}
+                      onClick={() => pedirApagar(r)}
                       disabled={r.id === user?.id}
                       className="p-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                       title={r.id === user?.id ? "Não pode eliminar a própria conta" : "Eliminar"}
@@ -112,6 +122,13 @@ function Utilizadores() {
 
       {creating && <UserForm onClose={() => setCreating(false)} onSaved={() => { setCreating(false); load(); }} />}
       {editing && <UserForm row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
+      <PasswordConfirmDialog
+        open={!!delUser}
+        title={`Eliminar utilizador — ${delUser?.nome || delUser?.email || ""}`}
+        description="Esta acção é irreversível. Confirme com a sua password."
+        onClose={() => setDelUser(null)}
+        onConfirmed={confirmarApagar}
+      />
     </div>
   );
 }
