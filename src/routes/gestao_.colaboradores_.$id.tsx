@@ -95,8 +95,8 @@ function Page() {
                         </Link>
                       </td>
                       <td className="p-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${estadoColor(r.estado)}`}>
-                          {estadoLabel(r.estado)}
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${estadoColor[r.estado] ?? ""}`}>
+                          {estadoLabel[r.estado] ?? r.estado}
                         </span>
                       </td>
                       <td className="p-3 text-right tabular-nums">{eur(r.orc_cliente)}</td>
