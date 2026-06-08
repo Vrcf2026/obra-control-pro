@@ -231,7 +231,7 @@ function Editor() {
     toast.success(`${parsed.length} rubricas importadas`);
   }
 
-  const totInterno = rubricas.reduce((s, r) => s + (Number(r.valor) || 0), 0);
+  const totInterno = rubricas.filter((r) => !r.parent_id).reduce((s, r) => s + (Number(r.valor) || 0), 0);
 
   async function save() {
     if (!nome || !cliente) {
@@ -298,14 +298,12 @@ function Editor() {
           .update({ nome: r.nome, orcamento_interno: Number(r.valor) || 0, parent_id: parentDbId } as any)
           .eq("id", r.id);
       } else {
-        await supabase
-          .from("rubricas")
-          .insert({
-            obra_id: obraId,
-            nome: r.nome,
-            orcamento_interno: Number(r.valor) || 0,
-            parent_id: parentDbId,
-          } as any);
+        await supabase.from("rubricas").insert({
+          obra_id: obraId,
+          nome: r.nome,
+          orcamento_interno: Number(r.valor) || 0,
+          parent_id: parentDbId,
+        } as any);
       }
     }
 
