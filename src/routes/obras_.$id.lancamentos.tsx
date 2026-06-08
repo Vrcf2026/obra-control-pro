@@ -8,6 +8,10 @@ import { DespesaPanel } from "@/components/DespesaPanel";
 import { ArrowLeft, Receipt, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/obras_/$id/lancamentos")({
   component: () => (
@@ -313,22 +317,25 @@ function Page() {
         />
       )}
 
-      <PasswordConfirmDialog
-        open={!!delGrupo}
-        title="Apagar lançamento"
-        description="Esta acção é irreversível. Confirme com a sua password."
-        onClose={() => setDelGrupo(null)}
-        onConfirmed={async () => {
-          if (!delGrupo) return;
-          const ids = delGrupo.linhas.map((l) => l.id);
-          const { error } = await supabase.from("lancamentos").delete().in("id", ids);
-          if (error) toast.error(error.message);
-          else {
-            toast.success("Lançamento apagado");
-            load();
-          }
-        }}
-      />
+      <AlertDialog open={!!delGrupo} onOpenChange={o => !o && setDelGrupo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar lançamento</AlertDialogTitle>
+            <AlertDialogDescription>Tens a certeza que queres apagar este lançamento? Esta acção é irreversível.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDelGrupo(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-danger text-white hover:bg-danger/90" onClick={async () => {
+              if (!delGrupo) return;
+              const ids = delGrupo.linhas.map(l => l.id);
+              const { error } = await supabase.from("lancamentos").delete().in("id", ids);
+              setDelGrupo(null);
+              if (error) toast.error(error.message);
+              else { toast.success("Lançamento apagado"); load(); }
+            }}>Apagar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -353,6 +360,7 @@ function EditPanel({
     Object.fromEntries(grupo.linhas.map((l) => [l.id, String(l.valor)])),
   );
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [showConfirmSave, setShowConfirmSave] = useState(false);
 
   const linhasActivas = grupo.linhas.filter((l) => !deletedIds.has(l.id));
   const total = linhasActivas.reduce((s, l) => s + (Number(valores[l.id]) || 0), 0);
@@ -481,12 +489,19 @@ function EditPanel({
               <button onClick={onClose} className="px-3 py-2 text-sm rounded-md border border-input">
                 Cancelar
               </button>
-              <button onClick={save} className="px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground">
+              <button onClick={() => setShowConfirmSave(true)} className="px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground">
                 Guardar alterações
               </button>
             </div>
           </div>
         )}
+        <PasswordConfirmDialog
+          open={showConfirmSave}
+          title="Guardar alterações ao lançamento"
+          description="Confirme com a sua password para guardar as alterações."
+          onClose={() => setShowConfirmSave(false)}
+          onConfirmed={() => { setShowConfirmSave(false); save(); }}
+        />
       </div>
     </div>
   );
