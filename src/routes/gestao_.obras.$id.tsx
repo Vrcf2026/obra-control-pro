@@ -68,6 +68,9 @@ function Editor() {
   const [originalIds, setOriginalIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [fixedIds, setFixedIds] = useState<Record<string, string>>({});
+  const [colaboradores, setColaboradores] = useState<{ id: string; nome: string; cargo: string | null }[]>([]);
+  const [respCliente, setRespCliente] = useState("");
+  const [respInternoId, setRespInternoId] = useState("");
   const nomeRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -81,6 +84,8 @@ function Editor() {
     (async () => {
       const { data } = await supabase.from("clientes").select("id,nome,nif,telefone").order("nome");
       setClientes((data ?? []) as Cliente[]);
+      const { data: colabs } = await (supabase.from("colaboradores") as any).select("id,nome,cargo").eq("ativo", true).order("nome");
+      setColaboradores(colabs ?? []);
     })();
   }, []);
 
@@ -100,6 +105,8 @@ function Editor() {
         setIni(o.data_inicio ?? "");
         setFim(o.data_fim_previsto ?? "");
         setOrcCliente(String((o as any).orcamento_cliente ?? 0));
+        setRespCliente((o as any).responsavel_cliente ?? "");
+        setRespInternoId((o as any).responsavel_interno_id ?? "");
         if ((o as any).prazo_dias) setPrazoDias(String((o as any).prazo_dias));
         else if (o.data_inicio && o.data_fim_previsto) {
           setPrazoDias(String(calcPrazoFromDates(o.data_inicio, o.data_fim_previsto)));
@@ -248,6 +255,8 @@ function Editor() {
       data_fim_previsto: fim || null,
       orcamento_cliente: Number(orcCliente),
       prazo_dias: prazoDias ? parseInt(prazoDias) : null,
+      responsavel_cliente: respCliente || null,
+      responsavel_interno_id: respInternoId || null,
     };
 
     let obraId = id;
@@ -428,6 +437,17 @@ function Editor() {
               onChange={(e) => setOrcCliente(e.target.value)}
               className="input"
             />
+          </F>
+          <F label="Responsável (cliente)">
+            <input value={respCliente} onChange={e => setRespCliente(e.target.value)} placeholder="Nome do responsável do cliente" className="input" />
+          </F>
+          <F label="Responsável interno">
+            <select value={respInternoId} onChange={e => setRespInternoId(e.target.value)} className="input">
+              <option value="">— Nenhum —</option>
+              {colaboradores.map(c => (
+                <option key={c.id} value={c.id}>{c.nome}{c.cargo ? ` (${c.cargo})` : ""}</option>
+              ))}
+            </select>
           </F>
         </div>
       </section>
