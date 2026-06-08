@@ -46,6 +46,8 @@ function Gestao() {
         <div className="flex gap-2">
           <Link to="/gestao/rubricas" className="border border-input px-3 py-2 rounded-md text-sm">Rubricas padrão</Link>
           <Link to="/gestao/colaboradores" className="border border-input px-3 py-2 rounded-md text-sm">Colaboradores</Link>
+          <Link to="/gestao/fornecedores" className="border border-input px-3 py-2 rounded-md text-sm">Fornecedores</Link>
+          <Link to="/gestao/unidades" className="border border-input px-3 py-2 rounded-md text-sm">Unidades</Link>
           <Link to="/gestao/utilizadores" className="border border-input px-3 py-2 rounded-md text-sm">Utilizadores</Link>
           <Link to="/gestao/auditoria" className="border border-input px-3 py-2 rounded-md text-sm">Auditoria</Link>
           <Link to="/gestao/obras/$id" params={{ id: "novo" }} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
