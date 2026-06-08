@@ -197,7 +197,9 @@ function Detalhe() {
 
   const totAvulsas = avulsas.reduce((s, x) => s + x.valor, 0);
   const totGasto =
-    rubricas.reduce((s, r) => s + (r.gasto ?? 0), 0) + adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0) + totAvulsas;
+    rubricas.filter((r) => !(r as any).parent_id).reduce((s, r) => s + (r.gasto ?? 0), 0) +
+    adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0) +
+    totAvulsas;
   const totInternoBase = rubricas
     .filter((r) => !(r as any).parent_id)
     .reduce((s, r) => s + Number(r.orcamento_interno), 0);
@@ -388,7 +390,7 @@ function Detalhe() {
                 const subs = rubricas.filter((x) => r.rubricaIds.includes((x as any).parent_id ?? ""));
                 const hasSubs = subs.length > 0;
                 const isExpanded = expandedRubricas.has(r.nome);
-               return (
+                return (
                   <React.Fragment key={i}>
                     <tr className="border-t border-border">
                       <td className="p-3 font-medium">
