@@ -66,6 +66,16 @@ function Page() {
     load();
   }
 
+  async function pedirApagar(id: string) {
+    // Check if colaborador has obras associated
+    const { data: obras } = await supabase.from("obras").select("id").eq("responsavel_interno_id" as any, id).limit(1);
+    if (obras && obras.length > 0) {
+      toast.error("Colaborador associado a obras — não pode ser eliminado");
+      return;
+    }
+    setDelId(id);
+  }
+
   async function apagar(id: string) {
     const { error } = await supabase.from("colaboradores").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removido"); load(); }
@@ -147,7 +157,7 @@ function Page() {
                     <td className="p-3 text-right space-x-1">
                       <button onClick={() => { setEditId(r.id); setForm({ nome: r.nome, cargo: r.cargo, email: r.email, telefone: r.telefone, ativo: r.ativo }); }}
                         className="text-muted-foreground hover:text-foreground p-1"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => setDelId(r.id)} className="text-muted-foreground hover:text-danger p-1"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => pedirApagar(r.id)} className="text-muted-foreground hover:text-danger p-1"><Trash2 className="w-4 h-4" /></button>
                     </td>
                   </>
                 )}
