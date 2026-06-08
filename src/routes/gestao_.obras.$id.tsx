@@ -72,6 +72,7 @@ function Editor() {
   const [respCliente, setRespCliente] = useState("");
   const [respInternoId, setRespInternoId] = useState("");
   const nomeRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [expandedRubricas, setExpandedRubricas] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -499,18 +500,37 @@ function Editor() {
             <tbody>
               {rubricas.map((r, i) => {
                 const isSub = !!r.parent_id;
+                const subsCount = !isSub ? rubricas.filter(x => x.parent_id === r.nome).length : 0;
+                const isExpanded = !isSub && expandedRubricas.has(r.nome);
+                if (isSub && !expandedRubricas.has(r.parent_id!)) return null;
                 return (
                   <tr key={i} className={`border-t border-border ${isSub ? "bg-muted/20" : ""}`}>
                     <td className="p-1.5">
-                      <div className={`flex items-center gap-1 ${isSub ? "pl-5" : ""}`}>
+                      <div className={`flex items-center gap-1 ${isSub ? "pl-6" : ""}`}>
                         {isSub && <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />}
+                        {!isSub && subsCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedRubricas(prev => {
+                              const next = new Set(prev);
+                              if (next.has(r.nome)) next.delete(r.nome); else next.add(r.nome);
+                              return next;
+                            })}
+                            className="text-muted-foreground hover:text-foreground shrink-0"
+                            style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {!isSub && subsCount === 0 && <span className="w-3.5 inline-block shrink-0" />}
                         {r.isFixed ? (
-                          <span className="px-2 py-1.5 text-sm font-medium text-foreground/80 flex-1">{r.nome}</span>
+                          <span className="px-2 py-1.5 text-sm font-medium text-foreground/80 flex-1">
+                            {r.nome}
+                            {subsCount > 0 && <span className="ml-1 text-xs text-muted-foreground">({subsCount})</span>}
+                          </span>
                         ) : (
                           <input
-                            ref={(el) => {
-                              nomeRefs.current[i] = el;
-                            }}
+                            ref={(el) => { nomeRefs.current[i] = el; }}
                             value={r.nome}
                             onChange={(e) => setRow(i, { nome: e.target.value })}
                             placeholder={isSub ? "Nome da subrubrica..." : "Nome da rubrica..."}
@@ -534,7 +554,10 @@ function Editor() {
                         {r.isFixed && (
                           <button
                             type="button"
-                            onClick={() => addSubrubrica(r.nome)}
+                            onClick={() => {
+                              addSubrubrica(r.nome);
+                              setExpandedRubricas(prev => new Set([...prev, r.nome]));
+                            }}
                             className="text-muted-foreground hover:text-primary p-1"
                             title={`Adicionar subrubrica a "${r.nome}"`}
                           >
