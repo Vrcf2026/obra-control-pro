@@ -1,207 +1,141 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { toast } from "sonner";
-import type { Role } from "@/hooks/use-auth";
-import { useAuth } from "@/hooks/use-auth";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
-import { createUser, updateUser, deleteUser } from "@/lib/users.functions";
-import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { eur } from "@/lib/format";
+import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/gestao_/utilizadores")({
-  component: () => <Protected allow={["admin"]}><Utilizadores /></Protected>,
+export const Route = createFileRoute("/gestao_/fornecedores_/$id")({
+  component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
 });
 
-interface Row { id: string; nome: string; email: string | null; role: Role | null }
+interface Forn { id: string; nome: string; nif: string | null; telefone: string | null; email: string | null; morada: string | null }
+interface Lanc { id: string; obra_id: string; obra_nome: string; rubrica_nome: string; data: string; descricao: string; valor: number; num_documento: string | null }
 
-const ROLES: Role[] = ["admin", "gestor", "encarregado"];
+function Page() {
+  const { id } = Route.useParams();
+  const [forn, setForn] = useState<Forn | null>(null);
+  const [lancs, setLancs] = useState<Lanc[]>([]);
+  const [ano, setAno] = useState<number>(new Date().getFullYear());
+  const [anos, setAnos] = useState<number[]>([]);
 
-function Utilizadores() {
-  const { user } = useAuth();
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Row | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [delUser, setDelUser] = useState<Row | null>(null);
-
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [id]);
 
   async function load() {
-    setLoading(true);
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("id,nome,email").order("nome"),
-      supabase.from("user_roles").select("user_id,role"),
+    const { data: f } = await supabase.from("fornecedores" as any).select("*").eq("id", id).maybeSingle();
+    setForn((f as Forn) ?? null);
+
+    const { data: l } = await supabase.from("lancamentos").select("id,obra_id,data,descricao,valor,num_documento,rubrica_id")
+      .eq("fornecedor_id" as any, id).order("data", { ascending: false });
+
+    if (!l || l.length === 0) { setLancs([]); return; }
+
+    const obraIds = [...new Set((l as any[]).map(x => x.obra_id))];
+    const rubricaIds = [...new Set((l as any[]).map(x => x.rubrica_id).filter(Boolean))];
+
+    const [{ data: obras }, { data: rubricas }] = await Promise.all([
+      supabase.from("obras").select("id,nome").in("id", obraIds),
+      supabase.from("rubricas").select("id,nome,parent_id").in("id", rubricaIds),
     ]);
-    const order: Role[] = ["admin", "gestor", "encarregado"];
-    const merged: Row[] = (profiles ?? []).map(p => {
-      const userRoles = (roles ?? []).filter(r => r.user_id === p.id).map(r => r.role as Role);
-      const top = order.find(r => userRoles.includes(r)) ?? null;
-      return { id: p.id, nome: p.nome, email: p.email, role: top };
-    });
-    setRows(merged);
-    setLoading(false);
-  }
 
-  async function pedirApagar(r: Row) {
-    if (r.id === user?.id) { toast.error("Não podes eliminar o teu próprio utilizador"); return; }
-    // Check if user has lancamentos or is responsible for obras
-    const { data: lans } = await supabase.from("lancamentos").select("id").eq("registado_por", r.id).limit(1);
-    if (lans && lans.length > 0) { toast.error("Utilizador tem lançamentos registados — não pode ser eliminado"); return; }
-    setDelUser(r);
-  }
+    const obraMap = new Map((obras ?? []).map((o: any) => [o.id, o.nome]));
+    const rubMap = new Map((rubricas ?? []).map((r: any) => [r.id, r]));
 
-  async function confirmarApagar() {
-    if (!delUser) return;
-    try {
-      await deleteUser({ data: { id: delUser.id } });
-      toast.success("Utilizador eliminado");
-      load();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro");
-    }
-  }
-
-  return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Utilizadores</h1>
-          <p className="text-sm text-muted-foreground">Gerir utilizadores e os seus papéis</p>
-        </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium hover:opacity-95"
-        >
-          <Plus className="w-4 h-4" /> Novo utilizador
-        </button>
-      </div>
-
-      <div className="bg-card border border-border rounded-lg overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="text-left p-3">Nome</th>
-              <th className="text-left p-3">Email</th>
-              <th className="text-left p-3 w-32">Papel</th>
-              <th className="text-right p-3 w-32">Acções</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">A carregar...</td></tr>}
-            {!loading && rows.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Sem utilizadores.</td></tr>}
-            {rows.map(r => (
-              <tr key={r.id} className="border-t border-border">
-                <td className="p-3 font-medium">{r.nome || "—"}</td>
-                <td className="p-3 text-muted-foreground">{r.email ?? "—"}</td>
-                <td className="p-3 capitalize">{r.role ?? "—"}</td>
-                <td className="p-3">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => setEditing(r)}
-                      className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
-                      title="Editar"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => pedirApagar(r)}
-                      disabled={r.id === user?.id}
-                      className="p-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                      title={r.id === user?.id ? "Não pode eliminar a própria conta" : "Eliminar"}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {creating && <UserForm onClose={() => setCreating(false)} onSaved={() => { setCreating(false); load(); }} />}
-      {editing && <UserForm row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
-      <PasswordConfirmDialog
-        open={!!delUser}
-        title={`Eliminar utilizador — ${delUser?.nome || delUser?.email || ""}`}
-        description="Esta acção é irreversível. Confirme com a sua password."
-        onClose={() => setDelUser(null)}
-        onConfirmed={confirmarApagar}
-      />
-    </div>
-  );
-}
-
-function UserForm({ row, onClose, onSaved }: { row?: Row; onClose: () => void; onSaved: () => void }) {
-  const isEdit = !!row;
-  const [nome, setNome] = useState(row?.nome ?? "");
-  const [email, setEmail] = useState(row?.email ?? "");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>(row?.role ?? "encarregado");
-  const [busy, setBusy] = useState(false);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      if (isEdit) {
-        await updateUser({ data: { id: row!.id, nome, role, password: password || undefined } });
-        toast.success("Utilizador actualizado");
-      } else {
-        await createUser({ data: { email, password, nome, role } });
-        toast.success("Utilizador criado");
+    const mapped: Lanc[] = (l as any[]).map(x => {
+      const rub = x.rubrica_id ? rubMap.get(x.rubrica_id) : null;
+      let rubNome = "—";
+      if (rub) {
+        if (rub.parent_id) {
+          const parent = rubMap.get(rub.parent_id);
+          rubNome = parent ? `${parent.nome} › ${rub.nome}` : rub.nome;
+        } else rubNome = rub.nome;
       }
-      onSaved();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro");
-    } finally {
-      setBusy(false);
-    }
+      return {
+        id: x.id, obra_id: x.obra_id,
+        obra_nome: obraMap.get(x.obra_id) ?? "—",
+        rubrica_nome: rubNome,
+        data: x.data, descricao: x.descricao,
+        valor: Number(x.valor),
+        num_documento: x.num_documento ?? null,
+      };
+    });
+
+    const anosSet = new Set<number>(mapped.map(l => new Date(l.data).getFullYear()));
+    setAnos(Array.from(anosSet).sort((a, b) => b - a));
+    setLancs(mapped);
   }
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card rounded-lg border border-border w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-start justify-between">
-          <h2 className="text-lg font-semibold">{isEdit ? "Editar utilizador" : "Novo utilizador"}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-        </div>
+  const filtrados = lancs.filter(l => new Date(l.data).getFullYear() === ano);
+  const total = filtrados.reduce((s, l) => s + l.valor, 0);
 
-        <form onSubmit={submit} className="space-y-3">
-          <div>
-            <label className="text-sm text-muted-foreground">Nome</label>
-            <input value={nome} onChange={e => setNome(e.target.value)} required
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="text-sm text-muted-foreground">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={isEdit}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60" />
-          </div>
-          <div>
-            <label className="text-sm text-muted-foreground">
-              {isEdit ? "Nova palavra-passe (opcional)" : "Palavra-passe"}
-            </label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-              required={!isEdit} minLength={isEdit ? undefined : 6}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="text-sm text-muted-foreground">Papel</label>
-            <select value={role} onChange={e => setRole(e.target.value as Role)}
-              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-2 text-sm capitalize">
-              {ROLES.map(r => <option key={r} value={r} className="capitalize">{r}</option>)}
+  if (!forn) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+
+  return (
+    <div className="p-4 md:p-8 space-y-6 max-w-5xl">
+      <Link to="/gestao/fornecedores" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+        <ArrowLeft className="w-4 h-4" /> Fornecedores
+      </Link>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <h1 className="text-2xl font-semibold">{forn.nome}</h1>
+        <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-3">
+          {forn.nif && <span>NIF: {forn.nif}</span>}
+          {forn.telefone && <span>{forn.telefone}</span>}
+          {forn.email && <span>{forn.email}</span>}
+          {forn.morada && <span>{forn.morada}</span>}
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
+          <h2 className="font-medium">Lançamentos</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Ano:</span>
+            <select value={ano} onChange={e => setAno(Number(e.target.value))}
+              className="border border-border rounded-md px-3 py-1.5 text-sm bg-background">
+              {anos.map(a => <option key={a} value={a}>{a}</option>)}
+              {anos.length === 0 && <option value={ano}>{ano}</option>}
             </select>
           </div>
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md hover:bg-muted">Cancelar</button>
-            <button type="submit" disabled={busy}
-              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground font-medium hover:opacity-95 disabled:opacity-50">
-              {busy ? "..." : isEdit ? "Guardar" : "Criar"}
-            </button>
+        </div>
+        {filtrados.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">Sem lançamentos no período.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">Data</th>
+                  <th className="text-left p-3">Obra</th>
+                  <th className="text-left p-3">Rubrica</th>
+                  <th className="text-left p-3">Descrição</th>
+                  <th className="text-left p-3">Nº Doc.</th>
+                  <th className="text-right p-3">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtrados.map(l => (
+                  <tr key={l.id} className="border-t border-border">
+                    <td className="p-3 tabular-nums text-muted-foreground">{l.data}</td>
+                    <td className="p-3">
+                      <Link to="/obras/$id" params={{ id: l.obra_id }} className="hover:underline text-primary">{l.obra_nome}</Link>
+                    </td>
+                    <td className="p-3 text-muted-foreground">{l.rubrica_nome}</td>
+                    <td className="p-3">{l.descricao || "—"}</td>
+                    <td className="p-3 text-muted-foreground">{l.num_documento || "—"}</td>
+                    <td className={`p-3 text-right tabular-nums font-medium ${l.valor < 0 ? "text-red-500" : ""}`}>{eur(l.valor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-muted/30 font-medium">
+                <tr>
+                  <td colSpan={5} className="p-3">Total {ano}</td>
+                  <td className={`p-3 text-right tabular-nums ${total < 0 ? "text-red-500" : ""}`}>{eur(total)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        </form>
+        )}
       </div>
     </div>
   );
