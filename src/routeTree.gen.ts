@@ -24,6 +24,7 @@ import { Route as ObrasIdLancamentosRouteImport } from './routes/obras_.$id.lanc
 import { Route as GestaoObrasIdRouteImport } from './routes/gestao_.obras.$id'
 import { Route as GestaoColaboradoresRouteImport } from './routes/gestao_.colaboradores'
 import { Route as GestaoFornecedoresRouteImport } from './routes/gestao_.fornecedores'
+import { Route as GestaoFornecedoresIdRouteImport } from './routes/gestao_.fornecedores_.$id'
 import { Route as GestaoUnidadesRouteImport } from './routes/gestao_.unidades'
 import { Route as GestaoColaboradoresIdRouteImport } from './routes/gestao_.colaboradores_.$id'
 
@@ -88,6 +89,11 @@ const ObrasIdLancamentosRoute = ObrasIdLancamentosRouteImport.update({
   path: '/obras/$id/lancamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GestaoFornecedoresIdRoute = GestaoFornecedoresIdRouteImport.update({
+  id: '/gestao_/fornecedores_/$id',
+  path: '/gestao/fornecedores/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GestaoFornecedoresRoute = GestaoFornecedoresRouteImport.update({
   id: '/gestao_/fornecedores',
   path: '/gestao/fornecedores',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/obras/$id/lancamentos': typeof ObrasIdLancamentosRoute
   '/gestao/colaboradores': typeof GestaoColaboradoresRoute
   '/gestao/fornecedores': typeof GestaoFornecedoresRoute
+  '/gestao/fornecedores/$id': typeof GestaoFornecedoresIdRoute
   '/gestao/unidades': typeof GestaoUnidadesRoute
   '/gestao/colaboradores/$id': typeof GestaoColaboradoresIdRoute
 }
@@ -170,6 +177,7 @@ export interface FileRoutesById {
   '/gestao_/colaboradores': typeof GestaoColaboradoresRoute
   '/gestao_/colaboradores_/$id': typeof GestaoColaboradoresIdRoute
   '/gestao_/fornecedores': typeof GestaoFornecedoresRoute
+  '/gestao_/fornecedores_/$id': typeof GestaoFornecedoresIdRoute
   '/gestao_/unidades': typeof GestaoUnidadesRoute
 }
 export interface FileRouteTypes {
@@ -191,6 +199,7 @@ export interface FileRouteTypes {
     | '/gestao/colaboradores'
     | '/gestao/colaboradores/$id'
     | '/gestao/fornecedores'
+    | '/gestao/fornecedores/$id'
     | '/gestao/unidades'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/gestao/colaboradores'
     | '/gestao/colaboradores/$id'
     | '/gestao/fornecedores'
+    | '/gestao/fornecedores/$id'
     | '/gestao/unidades'
   id:
     | '__root__'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/gestao_/colaboradores'
     | '/gestao_/colaboradores_/$id'
     | '/gestao_/fornecedores'
+    | '/gestao_/fornecedores_/$id'
     | '/gestao_/unidades'
   fileRoutesById: FileRoutesById
 }
@@ -249,6 +260,7 @@ export interface RootRouteChildren {
   GestaoColaboradoresRoute: typeof GestaoColaboradoresRoute
   GestaoColaboradoresIdRoute: typeof GestaoColaboradoresIdRoute
   GestaoFornecedoresRoute: typeof GestaoFornecedoresRoute
+  GestaoFornecedoresIdRoute: typeof GestaoFornecedoresIdRoute
   GestaoUnidadesRoute: typeof GestaoUnidadesRoute
 }
 
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoFornecedoresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gestao_/fornecedores_/$id': {
+      id: '/gestao_/fornecedores_/$id'
+      path: '/gestao/fornecedores/$id'
+      fullPath: '/gestao/fornecedores/$id'
+      preLoaderRoute: typeof GestaoFornecedoresIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gestao_/unidades': {
       id: '/gestao_/unidades'
       path: '/gestao/unidades'
@@ -393,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   GestaoColaboradoresRoute: GestaoColaboradoresRoute,
   GestaoColaboradoresIdRoute: GestaoColaboradoresIdRoute,
   GestaoFornecedoresRoute: GestaoFornecedoresRoute,
+  GestaoFornecedoresIdRoute: GestaoFornecedoresIdRoute,
   GestaoUnidadesRoute: GestaoUnidadesRoute,
 }
 export const routeTree = rootRouteImport
