@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { ArrowLeft } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { SkeletonCard, SkeletonTable } from "@/components/SkeletonTable";
 
 export const Route = createFileRoute("/gestao_/colaboradores_/$id")({
   component: () => <Protected allow={["admin"]}><Page /></Protected>,
@@ -48,13 +50,20 @@ function Page() {
   const totGasto = rows.reduce((s, r) => s + r.gasto, 0);
   const margem = totFat > 0 ? ((totFat - totGasto) / totFat) * 100 : 0;
 
-  if (!colab) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+  if (!colab) return (
+    <div className="p-4 md:p-8 space-y-6 max-w-5xl">
+      <SkeletonCard />
+      <SkeletonTable rows={3} cols={6} />
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl">
-      <Link to="/gestao/colaboradores" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-        <ArrowLeft className="w-4 h-4" /> Colaboradores
-      </Link>
+      <Breadcrumb crumbs={[
+        { label: "Gestão", to: "/gestao" },
+        { label: "Colaboradores", to: "/gestao/colaboradores" },
+        { label: colab?.nome ?? "..." },
+      ]} />
 
       <div className="bg-card border border-border rounded-lg p-5">
         <h1 className="text-2xl font-semibold">{colab.nome}</h1>

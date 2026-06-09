@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { eur } from "@/lib/format";
 import { ArrowLeft, Plus, X, Upload, ChevronRight } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { SkeletonCard } from "@/components/SkeletonTable";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -321,17 +323,21 @@ function Editor() {
     navigate({ to: "/gestao" });
   }
 
-  if (loading) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+  if (loading) return (
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl">
+      <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+      <SkeletonCard />
+      <SkeletonCard />
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-4xl">
       <div>
-        <Link
-          to="/gestao"
-          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Link>
+        <Breadcrumb crumbs={[
+          { label: "Gestão", to: "/gestao" },
+          { label: isNew ? "Nova obra" : "Editar obra" },
+        ]} />
         <h1 className="text-2xl font-semibold mt-2">{isNew ? "Nova obra" : "Editar obra"}</h1>
       </div>
 

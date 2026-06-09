@@ -51,6 +51,7 @@ function Relatorios() {
   const [loading, setLoading] = useState(true);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
 
+    useEffect(() => { document.title = "Relatórios — ObraControl"; return () => { document.title = "ObraControl"; }; }, []);
   useEffect(() => { load(); }, []);
 
   async function load() {

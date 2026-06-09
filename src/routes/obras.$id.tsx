@@ -179,6 +179,8 @@ function Detalhe() {
     setEstadoLog(arr.map((x) => ({ ...x, nome: x.alterado_por ? nomes[x.alterado_por] : undefined })));
   }
 
+  useEffect(() => { if (obra) { document.title = `${obra.nome} — ObraControl`; return () => { document.title = "ObraControl"; }; } }, [obra]);
+
   if (!obra) return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="h-4 w-48 bg-muted animate-pulse rounded" />

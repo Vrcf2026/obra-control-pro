@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
-import { Plus, Users, Edit, X, Trash2 } from "lucide-react";
+import { Plus, Users, Edit, X, Trash2, Copy } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 import { toast } from "sonner";
@@ -12,20 +12,40 @@ export const Route = createFileRoute("/gestao")({
   component: () => <Protected allow={["admin"]}><Gestao /></Protected>,
 });
 
-interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; localizacao: string | null; estado: string; orcamento_cliente: number; cliente_nome?: string }
+interface Obra { id: string; nome: string; cliente: string; cliente_id: string | null; localizacao: string | null; estado: string; orcamento_cliente: number; cliente_nome?: string; data_fim_previsto: string | null; responsavel_interno_id: string | null; responsavel_nome?: string }
 interface Profile { id: string; nome: string; email: string | null }
+interface Colaborador { id: string; nome: string }
 interface ObraUser { id: string; user_id: string; obra_id: string }
 
 function Gestao() {
   const [obras, setObras] = useState<Obra[]>([]);
   const [assignFor, setAssignFor] = useState<Obra | null>(null);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [deleteFor, setDeleteFor] = useState<Obra | null>(null);
   const [q, setQ] = useState("");
   const [estados, setEstados] = useState<string[]>(ESTADOS_DEFAULT);
 
+    useEffect(() => { document.title = "Gestão — ObraControl"; return () => { document.title = "ObraControl"; }; }, []);
   useEffect(() => { load(); }, []);
+
+  async function duplicarObra(o: Obra) {
+    const { data: rubricas } = await supabase.from("rubricas").select("nome,orcamento_interno").eq("obra_id", o.id).is("parent_id" as any, null);
+    const { data: nova, error } = await supabase.from("obras").insert({
+      nome: `${o.nome} (cópia)`, cliente: o.cliente, cliente_id: o.cliente_id,
+      localizacao: o.localizacao, estado: "orcamentacao", orcamento_cliente: o.orcamento_cliente,
+    }).select("id").maybeSingle();
+    if (error || !nova) { toast.error(error?.message ?? "Erro"); return; }
+    if (rubricas && rubricas.length > 0) {
+      await supabase.from("rubricas").insert(rubricas.map((r: any) => ({ obra_id: nova.id, nome: r.nome, orcamento_interno: r.orcamento_interno })));
+    }
+    toast.success(`Obra duplicada como "${o.nome} (cópia)"`);
+    load();
+  }
+
   async function load() {
-    const { data } = await supabase.from("obras").select("id,nome,cliente,cliente_id,localizacao,estado,orcamento_cliente").order("created_at", { ascending: false });
+    const { data } = await supabase.from("obras").select("id,nome,cliente,cliente_id,localizacao,estado,orcamento_cliente,data_fim_previsto,responsavel_interno_id").order("created_at", { ascending: false });
+    const { data: colabs } = await supabase.from("colaboradores" as any).select("id,nome").eq("ativo", true);
+    setColaboradores((colabs ?? []) as Colaborador[]);
     const arr = (data ?? []) as Obra[];
     const ids = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];
     if (ids.length) {
@@ -33,6 +53,8 @@ function Gestao() {
       const m = new Map((cs ?? []).map((c: any) => [c.id, c.nome]));
       arr.forEach(o => { if (o.cliente_id) o.cliente_nome = m.get(o.cliente_id); });
     }
+    const collabMap = new Map(((await supabase.from('colaboradores' as any).select('id,nome')).data ?? []).map((c: any) => [c.id, c.nome]));
+    arr.forEach(o => { if ((o as any).responsavel_interno_id) o.responsavel_nome = collabMap.get((o as any).responsavel_interno_id); });
     setObras(arr);
   }
 
@@ -43,17 +65,20 @@ function Gestao() {
           <h1 className="text-2xl font-semibold">Gestão</h1>
           <p className="text-sm text-muted-foreground">Gestão de obras e equipa</p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/gestao/rubricas" className="border border-input px-3 py-2 rounded-md text-sm">Rubricas padrão</Link>
-          <Link to="/gestao/colaboradores" className="border border-input px-3 py-2 rounded-md text-sm">Colaboradores</Link>
-          <Link to="/gestao/fornecedores" className="border border-input px-3 py-2 rounded-md text-sm">Fornecedores</Link>
-          <Link to="/gestao/unidades" className="border border-input px-3 py-2 rounded-md text-sm">Unidades</Link>
-          <Link to="/gestao/utilizadores" className="border border-input px-3 py-2 rounded-md text-sm">Utilizadores</Link>
-          <Link to="/gestao/auditoria" className="border border-input px-3 py-2 rounded-md text-sm">Auditoria</Link>
-          <Link to="/gestao/obras/$id" params={{ id: "novo" }} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
-            <Plus className="w-4 h-4" /> Nova obra
-          </Link>
-        </div>
+        <Link to="/gestao/obras/$id" params={{ id: "novo" }} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
+          <Plus className="w-4 h-4" /> Nova obra
+        </Link>
+      </div>
+
+      {/* Submenu de configurações */}
+      <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
+        <span className="text-xs text-muted-foreground self-center pr-1">Configurações:</span>
+        <Link to="/gestao/rubricas" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Rubricas padrão</Link>
+        <Link to="/gestao/colaboradores" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Colaboradores</Link>
+        <Link to="/gestao/fornecedores" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Fornecedores</Link>
+        <Link to="/gestao/unidades" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Unidades</Link>
+        <Link to="/gestao/utilizadores" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Utilizadores</Link>
+        <Link to="/gestao/auditoria" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Auditoria</Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2">
@@ -77,6 +102,8 @@ function Gestao() {
               <th className="text-left p-3">Cliente</th>
               <th className="text-left p-3">Estado</th>
               <th className="text-right p-3">Orç. cliente</th>
+              <th className="text-left p-3">Responsável</th>
+              <th className="text-left p-3">Prazo</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -89,8 +116,8 @@ function Gestao() {
                 const okE = estados.length === 0 || estados.includes(o.estado);
                 return okQ && okE;
               });
-              if (obras.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>;
-              if (filtered.length === 0) return <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
+              if (obras.length === 0) return <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Sem obras.</td></tr>;
+              if (filtered.length === 0) return <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
               return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
                 <td className="p-3"><Link to="/obras/$id" params={{ id: o.id }} className="font-medium hover:underline text-primary cursor-pointer">{o.nome}</Link></td>
@@ -110,9 +137,19 @@ function Gestao() {
                   </select>
                 </td>
                 <td className="p-3 text-right tabular-nums">{eur(o.orcamento_cliente)}</td>
+                <td className="p-3 text-sm text-muted-foreground">{(o as any).responsavel_nome || "—"}</td>
+                <td className="p-3 text-sm tabular-nums">
+                  {(o as any).data_fim_previsto ? (() => {
+                    const dias = Math.round((new Date((o as any).data_fim_previsto).getTime() - Date.now()) / 86400000);
+                    return <span className={dias < 0 ? "text-danger" : dias <= 14 ? "text-amber-500" : "text-muted-foreground"}>{(o as any).data_fim_previsto}</span>;
+                  })() : "—"}
+                </td>
                 <td className="p-3 text-right space-x-2 whitespace-nowrap">
                   <button onClick={() => setAssignFor(o)} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                     <Users className="w-4 h-4" /> Encarregados
+                  </button>
+                  <button onClick={() => duplicarObra(o)} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                    <Copy className="w-4 h-4" /> Duplicar
                   </button>
                   <Link to="/gestao/obras/$id" params={{ id: o.id }} className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                     <Edit className="w-4 h-4" /> Editar

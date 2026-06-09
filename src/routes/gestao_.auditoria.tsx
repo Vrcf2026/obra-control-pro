@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { ArrowLeft, Download, Trash2, Eye, X } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -117,9 +118,10 @@ function Auditoria() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div>
-        <Link to="/gestao" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Link>
+        <Breadcrumb crumbs={[
+          { label: "Gestão", to: "/gestao" },
+          { label: "Auditoria" },
+        ]} />
         <h1 className="text-2xl font-semibold mt-2">Auditoria</h1>
         <p className="text-sm text-muted-foreground">Histórico de criações, alterações e eliminações</p>
       </div>

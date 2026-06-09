@@ -27,6 +27,7 @@ interface LinhaRaw {
   id: string;
   data: string;
   fornecedor: string | null;
+  fornecedor_id: string | null;
   descricao: string;
   valor: number;
   rubrica_id: string | null;
@@ -59,6 +60,7 @@ function Page() {
   const [showDespesa, setShowDespesa] = useState(false);
   const [editGrupo, setEditGrupo] = useState<Grupo | null>(null);
   const [delGrupo, setDelGrupo] = useState<Grupo | null>(null);
+  const [fornMap, setFornMap] = useState<Map<string, string>>(new Map());
 
   const [fForn, setFForn] = useState("");
   const [fDesc, setFDesc] = useState("");
@@ -86,7 +88,13 @@ function Page() {
       ...((r ?? []) as any[]).filter((x) => !x.parent_id).map((x) => ({ id: x.id, nome: x.nome, origem: "Orçamento" })),
       ...arsObra.map((x) => ({ id: x.id, nome: x.nome, origem: `Adenda: ${adendaMap.get(x.adenda_id) ?? ""}` })),
     ]);
-    setLinhas(((l ?? []) as any[]).map((x) => ({ ...x, valor: Number(x.valor) })));
+    const linhasRaw = ((l ?? []) as any[]).map((x) => ({ ...x, valor: Number(x.valor) }));
+    const fornIds = [...new Set(linhasRaw.map((x: any) => x.fornecedor_id).filter(Boolean))];
+    if (fornIds.length > 0) {
+      const { data: forns } = await supabase.from("fornecedores" as any).select("id,nome").in("id", fornIds);
+      setFornMap(new Map(((forns ?? []) as any[]).map((f: any) => [f.id, f.nome])));
+    }
+    setLinhas(linhasRaw);
   }
 
   const rubricaLabel = (lin: LinhaRaw): string => {
@@ -98,11 +106,12 @@ function Page() {
   const grupos: Grupo[] = useMemo(() => {
     const map = new Map<string, Grupo>();
     linhas.forEach((l) => {
-      const key = `${l.created_at}|${l.data}|${l.fornecedor ?? ""}|${l.descricao}|${l.registado_por ?? ""}`;
+      const fornNome = (l as any).fornecedor_id ? (fornMap.get((l as any).fornecedor_id) ?? l.fornecedor) : l.fornecedor;
+      const key = `${l.created_at}|${l.data}|${fornNome ?? ""}|${l.descricao}|${l.registado_por ?? ""}`;
       const cur = map.get(key) ?? {
         key,
         data: l.data,
-        fornecedor: l.fornecedor,
+        fornecedor: fornNome,
         descricao: l.descricao,
         registado_por: l.registado_por,
         linhas: [],
@@ -113,7 +122,7 @@ function Page() {
       map.set(key, cur);
     });
     return Array.from(map.values()).sort((a, b) => b.data.localeCompare(a.data));
-  }, [linhas, rubricas]);
+  }, [linhas, rubricas, fornMap]);
 
   const filtrados = grupos.filter((g) => {
     if (fForn && !(g.fornecedor ?? "").toLowerCase().includes(fForn.toLowerCase())) return false;

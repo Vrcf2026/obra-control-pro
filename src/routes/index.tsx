@@ -25,6 +25,7 @@ function Dashboard() {
   const [rows, setRows] = useState<ObraRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+    useEffect(() => { document.title = "Dashboard — ObraControl"; return () => { document.title = "ObraControl"; }; }, []);
   useEffect(() => { load(); }, []);
 
   async function load() {

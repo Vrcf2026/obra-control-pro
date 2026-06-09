@@ -5,6 +5,8 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { ArrowLeft, Edit, X } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { SkeletonCard, SkeletonTable } from "@/components/SkeletonTable";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes_/$id")({
@@ -49,7 +51,12 @@ function Page() {
   const totGasto = rows.reduce((s, r) => s + r.gasto, 0);
   const margemMedia = totFat > 0 ? ((totFat - totGasto) / totFat) * 100 : 0;
 
-  if (!cliente) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+  if (!cliente) return (
+    <div className="p-4 md:p-8 space-y-6 max-w-5xl">
+      <SkeletonCard />
+      <SkeletonTable rows={3} cols={5} />
+    </div>
+  );
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl">

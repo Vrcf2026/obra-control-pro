@@ -5,6 +5,7 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { ChevronRight, X } from "lucide-react";
+import { SkeletonTable } from "@/components/SkeletonTable";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 
 export const Route = createFileRoute("/minhas-obras")({
