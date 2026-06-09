@@ -12,6 +12,7 @@ import {
   Line, Cell, PieChart, Pie, AreaChart, Area,
 } from "recharts";
 import { TrendingUp, Percent, Wallet, AlertTriangle } from "lucide-react";
+import { estadoLabel as ESTADO_LABEL } from "@/lib/format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -34,7 +35,6 @@ interface Fornecedor { id: string; nome: string; nif: string | null }
 
 const PALETTE = ["#1a5fa8","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-const ESTADO_LABEL: Record<string,string> = { orcamentacao:"Em orçamentação", adjudicada:"Adjudicada", em_curso:"Em curso", concluida:"Concluída", faturada:"Faturada" };
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace("#", "");
@@ -148,7 +148,7 @@ function rubricaNomeLanc(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[], resolveP
     return rub?.nome ?? "—";
   }
   if (l.adenda_rubrica_id) return adRubs.find(a => (a as any).id === l.adenda_rubrica_id)?.nome ?? "Adenda";
-  return l.rubrica_nome ?? "Avulsa";
+  return l.rubrica_nome ?? "—";
 }
 
 function rubricaNomeLancDetalhe(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[]): string {
@@ -162,7 +162,7 @@ function rubricaNomeLancDetalhe(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[]): 
     return rub?.nome ?? "—";
   }
   if (l.adenda_rubrica_id) return adRubs.find(a => (a as any).id === l.adenda_rubrica_id)?.nome ?? "Adenda";
-  return l.rubrica_nome ?? "Avulsa";
+  return l.rubrica_nome ?? "—";
 }
 
 // ============================================================
@@ -961,33 +961,21 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
     header(doc, `Lançamentos — ${obra.nome}`, obra.cliente);
 
     const lancObra = lancamentos.filter(l => l.obra_id === obra.id).sort((a,b) => a.data.localeCompare(b.data));
-    const lancRub = lancObra.filter(l => l.rubrica_id || l.adenda_rubrica_id);
-    const avulsas = lancObra.filter(l => !l.rubrica_id && !l.adenda_rubrica_id);
-
     const totalGeral = lancObra.reduce((s,l) => s + l.valor, 0);
 
     autoTable(doc, {
       startY: 34,
       head: [["Data","Fornecedor","Descrição","Rubrica","Valor"]],
-      body: lancRub.map(l => [l.data, l.fornecedor ?? "—", l.descricao, rubricaNomeLanc(l, rubricas, adRubs), eur(l.valor)]),
-      foot: avulsas.length === 0 ? [["", "", "", "Total", eur(totalGeral)]] : undefined,
+      body: lancObra.map(l => [l.data, l.fornecedor ?? "—", l.descricao, rubricaNomeLancDetalhe(l, rubricas, adRubs), eur(l.valor)]),
+      foot: [["", "", "", "Total", eur(totalGeral)]],
       headStyles: { fillColor: [26,95,168], textColor: 255 },
       footStyles: { fillColor: [240,240,240], textColor: 0, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [248,250,252] },
       styles: { fontSize: 9, cellPadding: 2.5 },
     });
 
-    if (avulsas.length > 0) {
-      autoTable(doc, {
-        startY: (doc as any).lastAutoTable.finalY + 6,
-        head: [["Data","Fornecedor","Descrição","Rubrica avulsa","Valor"]],
-        body: avulsas.map(l => [l.data, l.fornecedor ?? "—", l.descricao, l.rubrica_nome ?? "—", eur(l.valor)]),
-        foot: [["", "", "", "Total geral", eur(totalGeral)]],
-        headStyles: { fillColor: [217,119,6], textColor: 255 },
-        footStyles: { fillColor: [240,240,240], textColor: 0, fontStyle: "bold" },
-        alternateRowStyles: { fillColor: [254,249,235] },
-        styles: { fontSize: 9, cellPadding: 2.5 },
-      });
+    if (false) {
+      // legacy avulsas removed
     }
 
     footer(doc);

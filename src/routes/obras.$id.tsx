@@ -5,8 +5,9 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
-import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react";
-import { RubricaSelect } from "@/components/RubricaSelect";
+import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil, ChevronDown, ChevronRight, MapPin } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { SkeletonCard, SkeletonTable } from "@/components/SkeletonTable";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -104,38 +105,21 @@ function Detalhe() {
   const [delFatId, setDelFatId] = useState<string | null>(null);
   const [expandedRubricas, setExpandedRubricas] = useState<Set<string>>(new Set());
   const [editFat, setEditFat] = useState<Fatura | null>(null);
-  const [avulsas, setAvulsas] = useState<
-    Array<{
-      id: string;
-      data: string;
-      descricao: string;
-      fornecedor: string | null;
-      rubrica_nome: string | null;
-      valor: number;
-    }>
-  >([]);
+
 
   useEffect(() => {
     load();
   }, [id]);
 
   async function load() {
-    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }, { data: av }] = await Promise.all([
+    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: f }] = await Promise.all([
       supabase.from("obras").select("*").eq("id", id).maybeSingle(),
       supabase.from("rubricas").select("*").eq("obra_id", id).order("created_at"),
       supabase.from("lancamentos").select("rubrica_id,adenda_rubrica_id,valor").eq("obra_id", id),
       supabase.from("adendas").select("*").eq("obra_id", id).order("data", { ascending: false }),
       supabase.from("faturas_emitidas").select("*").eq("obra_id", id).order("data", { ascending: false }),
-      supabase
-        .from("lancamentos")
-        .select("id,data,descricao,fornecedor,rubrica_nome,valor")
-        .eq("obra_id", id)
-        .is("rubrica_id", null)
-        .is("adenda_rubrica_id", null)
-        .order("data", { ascending: false }),
     ]);
     setObra(o as unknown as Obra | null);
-    setAvulsas(((av ?? []) as any[]).map((x) => ({ ...x, valor: Number(x.valor) })));
     const gastosRub = new Map<string, number>();
     const gastosAd = new Map<string, number>();
     (l ?? []).forEach((x: any) => {
@@ -195,13 +179,17 @@ function Detalhe() {
     setEstadoLog(arr.map((x) => ({ ...x, nome: x.alterado_por ? nomes[x.alterado_por] : undefined })));
   }
 
-  if (!obra) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+  if (!obra) return (
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+      <SkeletonCard />
+      <SkeletonTable rows={4} cols={7} />
+    </div>
+  );
 
-  const totAvulsas = avulsas.reduce((s, x) => s + x.valor, 0);
   const totGasto =
     rubricas.filter((r) => !(r as any).parent_id).reduce((s, r) => s + (r.gasto ?? 0), 0) +
-    adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0) +
-    totAvulsas;
+    adRubs.reduce((s, r) => s + (r.gasto ?? 0), 0);
   const totInternoBase = rubricas
     .filter((r) => !(r as any).parent_id)
     .reduce((s, r) => s + Number(r.orcamento_interno), 0);
@@ -262,15 +250,30 @@ function Detalhe() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div>
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Link>
+        <Breadcrumb crumbs={[
+          { label: "Dashboard", to: "/" },
+          { label: obra?.nome ?? "Obra" },
+        ]} />
         <div className="mt-2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
             <h1 className="text-2xl font-semibold">{obra.nome}</h1>
             <p className="text-sm text-muted-foreground">
               {obra.cliente}
-              {obra.localizacao && ` · ${obra.localizacao}`}
+              {obra.localizacao && (
+                <>
+                  {" · "}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(obra.localizacao)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 hover:text-primary hover:underline"
+                    title="Ver no Google Maps"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    {obra.localizacao}
+                  </a>
+                </>
+              )}
               {obra.data_inicio && ` · ${obra.data_inicio}`}
               {obra.data_fim_previsto && ` → ${obra.data_fim_previsto}`}
               {(obra as any).responsavel_cliente && ` · Resp. cliente: ${(obra as any).responsavel_cliente}`}
@@ -498,47 +501,7 @@ function Detalhe() {
         </div>
       </div>
 
-      {/* Despesas avulsas */}
-      {avulsas.length > 0 && (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-            <h2 className="font-medium">Despesas avulsas</h2>
-            <span className="text-xs text-muted-foreground">(sem orçamento — afectam só margem actual)</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="text-left p-3">Data</th>
-                  <th className="text-left p-3">Descrição</th>
-                  <th className="text-left p-3">Rubrica</th>
-                  <th className="text-left p-3">Fornecedor</th>
-                  <th className="text-right p-3">Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {avulsas.map((x) => (
-                  <tr key={x.id} className="border-t border-border">
-                    <td className="p-3 text-muted-foreground tabular-nums">{x.data}</td>
-                    <td className="p-3">{x.descricao || "—"}</td>
-                    <td className="p-3">{x.rubrica_nome || "—"}</td>
-                    <td className="p-3">{x.fornecedor || "—"}</td>
-                    <td className="p-3 text-right tabular-nums">{eur(x.valor)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-muted/30 font-medium">
-                <tr>
-                  <td className="p-3" colSpan={4}>
-                    Total
-                  </td>
-                  <td className="p-3 text-right tabular-nums">{eur(totAvulsas)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
+
 
       {/* Trabalho extra */}
       {adendasExtra.length > 0 && (
@@ -961,12 +924,19 @@ function AdendaPanel({
   onSaved: () => void;
 }) {
   const isEdit = !!adenda;
+  const [padroes, setPadroes] = useState<string[]>([]);
   const [descricao, setDescricao] = useState(adenda?.descricao ?? "");
   const [data, setData] = useState(adenda?.data ?? new Date().toISOString().slice(0, 10));
   const [vc, setVc] = useState(adenda ? String(adenda.valor_cliente) : "0");
   const [tipo, setTipo] = useState<"extra" | "principal">(adenda?.tipo ?? "extra");
   const [linhas, setLinhas] = useState<{ nome: string; valor: string }[]>([{ nome: "", valor: "" }]);
   const valorRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    supabase.from("rubricas_padrao").select("nome").eq("ativo", true).order("ordem").then(({ data }) => {
+      setPadroes((data ?? []).map((r: any) => r.nome));
+    });
+  }, []);
 
   useEffect(() => {
     if (!adenda) return;
@@ -1120,7 +1090,16 @@ function AdendaPanel({
           {linhas.map((l, i) => (
             <div key={i} className="flex gap-2 items-center">
               <div className="flex-1">
-                <RubricaSelect value={l.nome} onChange={(nome) => setLinha(i, { nome })} />
+                <input
+                  list="padroes-adenda"
+                  value={l.nome}
+                  onChange={e => setLinha(i, { nome: e.target.value })}
+                  placeholder="Nome da rubrica..."
+                  className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <datalist id="padroes-adenda">
+                  {padroes.map((p, pi) => <option key={pi} value={p} />)}
+                </datalist>
               </div>
               <input
                 ref={(el) => {

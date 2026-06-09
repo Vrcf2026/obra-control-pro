@@ -165,10 +165,12 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
       if (!rid) return;
       rows.push({
         obra_id: obraId, rubrica_id: rid, data,
-        fornecedor: fornecedor || null, descricao,
+        fornecedor: fornecedor || null,
+        fornecedor_id: fornecedorId || null,
+        descricao,
         valor: l.negativo ? -(Number(l.valor)) : Number(l.valor),
         registado_por: user.id,
-      });
+      } as any);
     }
     const { error } = await supabase.from("lancamentos").insert(rows);
     if (error) toast.error(error.message);
@@ -243,7 +245,13 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
             </Field>
             {modo === "rapido" ? (
               <Field label="Fornecedor (opcional)">
-                <input value={fornecedor} onChange={e => setFornecedor(e.target.value)} className="inp" />
+                <select value={fornecedorId} onChange={e => {
+                  setFornecedorId(e.target.value);
+                  setFornecedor(fornecedores.find(f => f.id === e.target.value)?.nome ?? "");
+                }} className="inp">
+                  <option value="">— nenhum —</option>
+                  {fornecedores.map(f => <option key={f.id} value={f.id}>{f.nome}{f.nif ? ` (${f.nif})` : ""}</option>)}
+                </select>
               </Field>
             ) : (
               <Field label="Fornecedor *">

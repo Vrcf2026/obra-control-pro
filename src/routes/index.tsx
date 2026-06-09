@@ -5,6 +5,7 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { AlertTriangle, Briefcase, TrendingUp } from "lucide-react";
+import { SkeletonTable } from "@/components/SkeletonTable";
 
 export const Route = createFileRoute("/")({ component: Page });
 
@@ -116,7 +117,7 @@ function Dashboard() {
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border"><h2 className="font-medium">Obras</h2></div>
-        {loading ? <div className="p-8 text-center text-muted-foreground">A carregar...</div>
+        {loading ? <SkeletonTable rows={4} cols={7} />
         : rows.length === 0 ? <div className="p-8 text-center text-muted-foreground">Sem obras. Crie em <Link to="/gestao" className="text-primary underline">Gestão</Link>.</div>
         : (
           <div className="overflow-x-auto">

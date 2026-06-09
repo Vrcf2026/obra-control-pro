@@ -5,7 +5,9 @@ import { Protected } from "@/components/Protected";
 import { useAuth } from "@/hooks/use-auth";
 import { eur } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
-import { ArrowLeft, Receipt, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, Receipt, Pencil, Trash2, X, Download } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
@@ -90,7 +92,7 @@ function Page() {
   const rubricaLabel = (lin: LinhaRaw): string => {
     if (lin.rubrica_id) return rubricas.find((r) => r.id === lin.rubrica_id)?.nome ?? "—";
     if (lin.adenda_rubrica_id) return rubricas.find((r) => r.id === lin.adenda_rubrica_id)?.nome ?? "—";
-    return lin.rubrica_nome ?? "Avulsa";
+    return lin.rubrica_nome ?? "—";
   };
 
   const grupos: Grupo[] = useMemo(() => {
@@ -117,11 +119,7 @@ function Page() {
     if (fForn && !(g.fornecedor ?? "").toLowerCase().includes(fForn.toLowerCase())) return false;
     if (fDesc && !g.descricao.toLowerCase().includes(fDesc.toLowerCase())) return false;
     if (fRub) {
-      if (fRub === "__avulsa__") {
-        if (!g.linhas.some((l) => !l.rubrica_id && !l.adenda_rubrica_id)) return false;
-      } else {
-        if (!g.linhas.some((l) => l.rubrica_id === fRub || l.adenda_rubrica_id === fRub)) return false;
-      }
+      if (!g.linhas.some((l) => l.rubrica_id === fRub || l.adenda_rubrica_id === fRub)) return false;
     }
     if (fDe && g.data < fDe) return false;
     if (fAte && g.data > fAte) return false;
@@ -139,23 +137,27 @@ function Page() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div>
-        <Link
-          to="/obras/$id"
-          params={{ id }}
-          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" /> {obraNome || "Voltar"}
-        </Link>
+        <Breadcrumb crumbs={[
+          { label: "Dashboard", to: "/" },
+          { label: obraNome || "Obra", to: "/obras/$id", params: { id } },
+          { label: "Lançamentos" },
+        ]} />
         <div className="mt-2 flex items-center justify-between gap-2">
           <h1 className="text-2xl font-semibold">Lançamentos</h1>
-          {canSpend && (
-            <button
-              onClick={() => setShowDespesa(true)}
-              className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
-            >
-              <Receipt className="w-4 h-4" /> Registar despesa
+          <div className="flex gap-2">
+            <button onClick={exportarExcel}
+              className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1">
+              <Download className="w-4 h-4" /> Excel
             </button>
-          )}
+            {canSpend && (
+              <button
+                onClick={() => setShowDespesa(true)}
+                className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
+              >
+                <Receipt className="w-4 h-4" /> Registar despesa
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -183,7 +185,6 @@ function Page() {
               {r.nome} ({r.origem})
             </option>
           ))}
-          <option value="__avulsa__">Avulsa</option>
         </select>
         <input
           type="date"

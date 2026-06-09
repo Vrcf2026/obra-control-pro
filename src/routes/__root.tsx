@@ -81,7 +81,7 @@ function RootComponent() {
   return (
     <AuthProvider>
       <Outlet />
-      <Toaster />
+      <Toaster duration={4000} richColors />
     </AuthProvider>
   );
 }
