@@ -25,11 +25,12 @@ function Page() {
   );
 }
 
-interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number; }
-interface Rubrica { id: string; obra_id: string; nome: string; orcamento_interno: number; }
+interface Obra { id: string; nome: string; cliente: string; localizacao: string | null; estado: string; data_inicio: string | null; data_fim_previsto: string | null; orcamento_cliente: number; prazo_dias: number | null; }
+interface Rubrica { id: string; obra_id: string; nome: string; orcamento_interno: number; parent_id: string | null; }
 interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_rubrica_id: string | null; rubrica_nome: string | null; data: string; descricao: string; fornecedor: string | null; valor: number; }
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
 interface AdRub { id: string; adenda_id: string; nome: string; valor: number }
+interface Fornecedor { id: string; nome: string; nif: string | null }
 
 const PALETTE = ["#1a5fa8","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -48,17 +49,19 @@ function Relatorios() {
   const [adendas, setAdendas] = useState<Adenda[]>([]);
   const [adRubs, setAdRubs] = useState<AdRub[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
-    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: ar }] = await Promise.all([
+    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: ar }, { data: f }] = await Promise.all([
       supabase.from("obras").select("*").order("nome"),
-      supabase.from("rubricas").select("*"),
+      supabase.from("rubricas").select("id,obra_id,nome,orcamento_interno,parent_id").order("nome"),
       supabase.from("lancamentos").select("*"),
       supabase.from("adendas").select("*"),
       supabase.from("adenda_rubricas").select("id,adenda_id,nome,valor"),
+      supabase.from("fornecedores" as any).select("id,nome,nif").eq("ativo", true).order("nome"),
     ]);
     const intMap = new Map<string, number>();
     ((ar ?? []) as AdRub[]).forEach(x => intMap.set(x.adenda_id, (intMap.get(x.adenda_id) ?? 0) + Number(x.valor)));
@@ -67,6 +70,7 @@ function Relatorios() {
     setLancamentos(((l ?? []) as Lanc[]).map(x => ({ ...x, valor: Number(x.valor) })));
     setAdendas(((a ?? []) as any[]).map(x => ({ ...x, valor_cliente: Number(x.valor_cliente), valor_interno: intMap.get(x.id) ?? 0 })) as Adenda[]);
     setAdRubs(((ar ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })));
+    setFornecedores((f ?? []) as Fornecedor[]);
     setLoading(false);
   }
 
@@ -95,11 +99,16 @@ function Relatorios() {
       <Tabs defaultValue="dashboard">
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-8">
-          <Dashboard obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} />
+          <Dashboard obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} fornecedores={fornecedores} />
+        </TabsContent>
+
+        <TabsContent value="fornecedores" className="space-y-6">
+          <RelatorioFornecedores fornecedores={fornecedores} lancamentos={lancamentos} rubricas={rubricas} obras={obras} adRubs={adRubs} />
         </TabsContent>
 
         <TabsContent value="pdf" className="space-y-4">
@@ -128,8 +137,30 @@ function calcObra(o: Obra, rubricas: Rubrica[], adendas: Adenda[], lancamentos: 
   return { orcInt, adCli, adInt, fat, gasto, margem, pct };
 }
 
-function rubricaNomeLanc(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[]): string {
-  if (l.rubrica_id) return rubricas.find(r => r.id === l.rubrica_id)?.nome ?? "—";
+function rubricaNomeLanc(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[], resolveParent = true): string {
+  if (l.rubrica_id) {
+    const rub = rubricas.find(r => r.id === l.rubrica_id);
+    if (rub && resolveParent && rub.parent_id) {
+      // subrubrica — resolve to parent name
+      const parent = rubricas.find(r => r.id === rub.parent_id);
+      return parent?.nome ?? rub.nome;
+    }
+    return rub?.nome ?? "—";
+  }
+  if (l.adenda_rubrica_id) return adRubs.find(a => (a as any).id === l.adenda_rubrica_id)?.nome ?? "Adenda";
+  return l.rubrica_nome ?? "Avulsa";
+}
+
+function rubricaNomeLancDetalhe(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[]): string {
+  // Returns full name including subrubrica
+  if (l.rubrica_id) {
+    const rub = rubricas.find(r => r.id === l.rubrica_id);
+    if (rub?.parent_id) {
+      const parent = rubricas.find(r => r.id === rub.parent_id);
+      return parent ? `${parent.nome} › ${rub.nome}` : rub.nome;
+    }
+    return rub?.nome ?? "—";
+  }
   if (l.adenda_rubrica_id) return adRubs.find(a => (a as any).id === l.adenda_rubrica_id)?.nome ?? "Adenda";
   return l.rubrica_nome ?? "Avulsa";
 }
@@ -137,8 +168,8 @@ function rubricaNomeLanc(l: Lanc, rubricas: Rubrica[], adRubs: AdRub[]): string 
 // ============================================================
 // Dashboard executivo
 // ============================================================
-function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas, adRubs }: {
-  obras: Obra[]; obrasActivas: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[];
+function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas, adRubs, fornecedores }: {
+  obras: Obra[]; obrasActivas: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[]; fornecedores: Fornecedor[];
 }) {
   return (
     <Tabs defaultValue="global">
@@ -147,7 +178,7 @@ function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas, adRubs
         <TabsTrigger value="obra">Por obra</TabsTrigger>
       </TabsList>
       <TabsContent value="global" className="space-y-8 mt-4">
-        <DashboardGlobal obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} />
+        <DashboardGlobal obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} fornecedores={fornecedores} />
       </TabsContent>
       <TabsContent value="obra" className="space-y-6 mt-4">
         <DashboardPorObra obras={obras} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} />
@@ -156,8 +187,8 @@ function Dashboard({ obras, obrasActivas, rubricas, lancamentos, adendas, adRubs
   );
 }
 
-function DashboardGlobal({ obrasActivas, rubricas, lancamentos, adendas, adRubs }: {
-  obras: Obra[]; obrasActivas: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[];
+function DashboardGlobal({ obras, obrasActivas, rubricas, lancamentos, adendas, adRubs, fornecedores }: {
+  obras: Obra[]; obrasActivas: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[]; fornecedores: Fornecedor[];
 }) {
   const anoActual = new Date().getFullYear();
   const [ano, setAno] = useState<number>(anoActual);
@@ -179,6 +210,19 @@ function DashboardGlobal({ obrasActivas, rubricas, lancamentos, adendas, adRubs 
     const gastoAno = lancamentos.filter(l => new Date(l.data).getFullYear() === anoActual).reduce((s,l) => s + l.valor, 0);
     return { totalFat, totalGasto, margem, margemPct, risco, atencao, gastoAno };
   }, [obrasActivas, rubricas, adendas, lancamentos, anoActual]);
+
+  const obrasComPrazo = useMemo(() => {
+    const hoje = new Date();
+    return obrasActivas
+      .filter(o => o.data_fim_previsto)
+      .map(o => {
+        const fim = new Date(o.data_fim_previsto!);
+        const diasRestantes = Math.round((fim.getTime() - hoje.getTime()) / 86400000);
+        return { ...o, diasRestantes };
+      })
+      .filter(o => o.diasRestantes <= 30)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
+  }, [obrasActivas]);
 
   const { mensaisData, rubricasAnoNomes } = useMemo(() => {
     const lancAno = lancamentos.filter(l => new Date(l.data).getFullYear() === ano);
@@ -247,6 +291,28 @@ function DashboardGlobal({ obrasActivas, rubricas, lancamentos, adendas, adRubs 
         <KpiCard icon={<Wallet className="w-5 h-5" />} color="text-purple-500 bg-purple-500/10" label="Gasto acumulado" value={eur(kpis.gastoAno)} sub="este ano" />
         <KpiCard icon={<AlertTriangle className="w-5 h-5" />} color="text-red-500 bg-red-500/10" label="Obras em risco" value={String(kpis.risco)} sub={<span className="text-yellow-500">{kpis.atencao} em atenção</span>} valueColor="text-red-500" />
       </section>
+
+      {obrasComPrazo.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Obras com prazo a terminar (próximos 30 dias)</span>
+          </div>
+          <div className="space-y-2">
+            {obrasComPrazo.map(o => (
+              <div key={o.id} className="flex items-center justify-between text-sm">
+                <span className="font-medium">{o.nome}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground">{o.data_fim_previsto}</span>
+                  <span className={`font-medium tabular-nums ${o.diasRestantes < 0 ? "text-red-500" : o.diasRestantes <= 7 ? "text-red-400" : "text-amber-500"}`}>
+                    {o.diasRestantes < 0 ? `${Math.abs(o.diasRestantes)} dias em atraso` : o.diasRestantes === 0 ? "Termina hoje" : `${o.diasRestantes} dias`}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Section title="Gasto mensal por rubrica" right={
         <Select value={String(ano)} onValueChange={v => setAno(Number(v))}>
@@ -961,6 +1027,169 @@ function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor 
         </Select>
         <Button onClick={gerarRelatorioObra} disabled={!obraId} className="w-full">Gerar PDF</Button>
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Relatório por fornecedor
+// ============================================================
+function RelatorioFornecedores({ fornecedores, lancamentos, rubricas, obras, adRubs }: {
+  fornecedores: Fornecedor[]; lancamentos: Lanc[]; rubricas: Rubrica[]; obras: Obra[]; adRubs: AdRub[];
+}) {
+  const [fornId, setFornId] = useState<string>("__todos__");
+  const [ano, setAno] = useState<number>(new Date().getFullYear());
+
+  const anosDisponiveis = useMemo(() => {
+    const set = new Set<number>([new Date().getFullYear()]);
+    lancamentos.forEach(l => set.add(new Date(l.data).getFullYear()));
+    return Array.from(set).sort((a, b) => b - a);
+  }, [lancamentos]);
+
+  const obraMap = useMemo(() => new Map(obras.map(o => [o.id, o.nome])), [obras]);
+
+  const lancsFiltrados = useMemo(() => {
+    return lancamentos.filter(l => {
+      if (new Date(l.data).getFullYear() !== ano) return false;
+      if (fornId === "__todos__") return l.fornecedor != null || (l as any).fornecedor_id != null;
+      return (l as any).fornecedor_id === fornId;
+    });
+  }, [lancamentos, fornId, ano]);
+
+  // Group by fornecedor
+  const porFornecedor = useMemo(() => {
+    const map = new Map<string, { nome: string; total: number; obras: Map<string, number> }>();
+    lancamentos.filter(l => new Date(l.data).getFullYear() === ano).forEach(l => {
+      const fId = (l as any).fornecedor_id ?? null;
+      const fNome = fId
+        ? (fornecedores.find(f => f.id === fId)?.nome ?? l.fornecedor ?? "—")
+        : (l.fornecedor ?? null);
+      if (!fNome) return;
+      const key = fId ?? fNome;
+      const cur = map.get(key) ?? { nome: fNome, total: 0, obras: new Map() };
+      cur.total += l.valor;
+      cur.obras.set(l.obra_id, (cur.obras.get(l.obra_id) ?? 0) + l.valor);
+      map.set(key, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [lancamentos, fornecedores, ano]);
+
+  const totalGeral = porFornecedor.reduce((s, f) => s + f.total, 0);
+
+  // Detail lancamentos for selected fornecedor
+  const detalhe = useMemo(() => {
+    if (fornId === "__todos__") return [];
+    return lancamentos
+      .filter(l => (l as any).fornecedor_id === fornId && new Date(l.data).getFullYear() === ano)
+      .sort((a, b) => b.data.localeCompare(a.data));
+  }, [lancamentos, fornId, ano]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 flex-wrap">
+        <Select value={String(ano)} onValueChange={v => setAno(Number(v))}>
+          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+          <SelectContent>{anosDisponiveis.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={fornId} onValueChange={setFornId}>
+          <SelectTrigger className="w-56"><SelectValue placeholder="Todos os fornecedores" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__todos__">Todos os fornecedores</SelectItem>
+            {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Tabela resumo */}
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="px-5 py-3 border-b border-border font-medium">Gastos por fornecedor — {ano}</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="text-left p-3">Fornecedor</th>
+                <th className="text-right p-3">Total</th>
+                <th className="text-right p-3">% do total</th>
+                <th className="text-left p-3">Obras</th>
+              </tr>
+            </thead>
+            <tbody>
+              {porFornecedor.map((f, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className="p-3 font-medium">
+                    <button onClick={() => {
+                      const found = fornecedores.find(x => x.nome === f.nome);
+                      setFornId(found?.id ?? "__todos__");
+                    }} className="hover:underline text-primary text-left">{f.nome}</button>
+                  </td>
+                  <td className="p-3 text-right tabular-nums">{eur(f.total)}</td>
+                  <td className="p-3 text-right tabular-nums">{totalGeral > 0 ? ((f.total / totalGeral) * 100).toFixed(1) : 0}%</td>
+                  <td className="p-3 text-muted-foreground text-xs">
+                    {Array.from(f.obras.entries()).map(([oId, v]) => `${obraMap.get(oId) ?? oId} (${eur(v)})`).join(" · ")}
+                  </td>
+                </tr>
+              ))}
+              {porFornecedor.length === 0 && (
+                <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Sem lançamentos com fornecedor no período.</td></tr>
+              )}
+            </tbody>
+            {porFornecedor.length > 0 && (
+              <tfoot className="bg-muted/30 font-medium">
+                <tr>
+                  <td className="p-3">Total</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totalGeral)}</td>
+                  <td className="p-3 text-right">100%</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </div>
+
+      {/* Detalhe por fornecedor */}
+      {fornId !== "__todos__" && (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-border font-medium">
+            Lançamentos — {fornecedores.find(f => f.id === fornId)?.nome ?? fornId}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">Data</th>
+                  <th className="text-left p-3">Obra</th>
+                  <th className="text-left p-3">Rubrica</th>
+                  <th className="text-left p-3">Descrição</th>
+                  <th className="text-right p-3">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detalhe.map(l => (
+                  <tr key={l.id} className="border-t border-border">
+                    <td className="p-3 tabular-nums text-muted-foreground">{l.data}</td>
+                    <td className="p-3">{obraMap.get(l.obra_id) ?? "—"}</td>
+                    <td className="p-3">{rubricaNomeLancDetalhe(l, rubricas, adRubs)}</td>
+                    <td className="p-3 text-muted-foreground">{l.descricao || "—"}</td>
+                    <td className={`p-3 text-right tabular-nums font-medium ${l.valor < 0 ? "text-red-500" : ""}`}>{eur(l.valor)}</td>
+                  </tr>
+                ))}
+                {detalhe.length === 0 && (
+                  <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Sem lançamentos.</td></tr>
+                )}
+              </tbody>
+              {detalhe.length > 0 && (
+                <tfoot className="bg-muted/30 font-medium">
+                  <tr>
+                    <td colSpan={4} className="p-3">Total</td>
+                    <td className="p-3 text-right tabular-nums">{eur(detalhe.reduce((s, l) => s + l.valor, 0))}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
