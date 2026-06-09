@@ -446,27 +446,44 @@ function Detalhe() {
                     </tr>
                     {hasSubs &&
                       isExpanded &&
-                      subs.map((sub) => (
-                        <tr key={sub.id} className="border-t border-border bg-muted/20">
-                          <td className="p-2 pl-8 text-sm text-muted-foreground flex items-center gap-1">
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                            {sub.nome}
-                          </td>
-                          <td colSpan={4} className="p-2 text-right tabular-nums text-sm">
-                            {eur(sub.gasto)}
-                          </td>
-                          <td colSpan={2} />
-                        </tr>
-                      ))}
+                      subs.map((sub) => {
+                        const subOrc = Number(sub.orcamento_interno);
+                        const subGasto = sub.gasto ?? 0;
+                        const subDesvio = subOrc - subGasto;
+                        const subCons = subOrc > 0 ? (subGasto / subOrc) * 100 : 0;
+                        const hasOrc = subOrc > 0;
+                        return (
+                          <tr key={sub.id} className="border-t border-border bg-muted/20">
+                            <td className="p-2 pl-8 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                                {sub.nome}
+                              </div>
+                            </td>
+                            {hasOrc ? (
+                              <>
+                                <td className="p-2 text-right tabular-nums text-sm">{eur(subOrc)}</td>
+                                <td className="p-2 text-right text-sm text-muted-foreground">—</td>
+                                <td className="p-2 text-right tabular-nums text-sm font-medium">{eur(subOrc)}</td>
+                                <td className="p-2 text-right tabular-nums text-sm">{eur(subGasto)}</td>
+                                <td className={`p-2 text-right tabular-nums text-sm ${subDesvio < 0 ? "text-danger" : "text-success"}`}>{eur(subDesvio)}</td>
+                                <td className="p-2 text-right tabular-nums text-sm">{subCons.toFixed(0)}%</td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="p-2 text-right text-sm text-muted-foreground">—</td>
+                                <td className="p-2 text-right text-sm text-muted-foreground">—</td>
+                                <td className="p-2 text-right text-sm text-muted-foreground">—</td>
+                                <td className="p-2 text-right tabular-nums text-sm">{eur(subGasto)}</td>
+                                <td className="p-2 text-right text-sm text-muted-foreground">—</td>
+                                <td className="p-2 text-right text-sm text-muted-foreground">—</td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
                   </React.Fragment>
                 );
               })}

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
 import { Modal, Field } from "./obras.$id";
-import { Plus, Users, Edit, X, Trash2, Copy } from "lucide-react";
+import { Plus, Users, Edit, X, Trash2, Copy, MapPin } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
 import { toast } from "sonner";
@@ -73,6 +73,7 @@ function Gestao() {
       {/* Submenu de configurações */}
       <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
         <span className="text-xs text-muted-foreground self-center pr-1">Configurações:</span>
+        <Link to="/clientes" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Clientes</Link>
         <Link to="/gestao/rubricas" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Rubricas padrão</Link>
         <Link to="/gestao/colaboradores" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Colaboradores</Link>
         <Link to="/gestao/fornecedores" className="text-xs border border-input px-2.5 py-1.5 rounded-md hover:bg-muted">Fornecedores</Link>
@@ -120,7 +121,16 @@ function Gestao() {
               if (filtered.length === 0) return <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Nenhuma obra encontrada.</td></tr>;
               return filtered.map(o => (
               <tr key={o.id} className="border-t border-border">
-                <td className="p-3"><Link to="/obras/$id" params={{ id: o.id }} className="font-medium hover:underline text-primary cursor-pointer">{o.nome}</Link></td>
+                <td className="p-3">
+                  <div className="flex items-center gap-1">
+                    <Link to="/obras/$id" params={{ id: o.id }} className="font-medium hover:underline text-primary cursor-pointer">{o.nome}</Link>
+                    {o.localizacao && (
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.localizacao)}`} target="_blank" rel="noopener noreferrer" title={o.localizacao} className="text-muted-foreground hover:text-primary">
+                        <MapPin className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </td>
                 <td className="p-3 text-muted-foreground">{o.cliente_nome || o.cliente}</td>
                 <td className="p-3">
                   <select

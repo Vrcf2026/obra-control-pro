@@ -33,6 +33,9 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
 
   // Subs disponíveis por pai
   const [subsPorPai, setSubsPorPai] = useState<Record<string, SubOpcao[]>>({});
+  const [showNovoForn, setShowNovoForn] = useState(false);
+  const [novoFornNome, setNovoFornNome] = useState("");
+  const [novoFornNif, setNovoFornNif] = useState("");
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
 
@@ -122,6 +125,18 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
   const totalRapido = linhas.reduce((s, l) => {
     const v = Number(l.valor) || 0; return s + (l.negativo ? -v : v);
   }, 0);
+
+  async function criarFornecedor() {
+    if (!novoFornNome.trim()) { toast.error("Nome obrigatório"); return; }
+    const { data, error } = await supabase.from("fornecedores" as any)
+      .insert({ nome: novoFornNome.trim(), nif: novoFornNif || null, ativo: true })
+      .select("id,nome,nif").maybeSingle();
+    if (error || !data) { toast.error(error?.message ?? "Erro"); return; }
+    setFornecedores(fs => [...fs, data as Fornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setFornecedorId((data as any).id);
+    setShowNovoForn(false); setNovoFornNome(""); setNovoFornNif("");
+    toast.success("Fornecedor criado");
+  }
 
   async function criarSubrubrica(parentId: string, nome: string): Promise<string | null> {
     const { data: existe } = await supabase.from("rubricas").select("id")
@@ -246,19 +261,45 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
             {modo === "rapido" ? (
               <Field label="Fornecedor (opcional)">
                 <select value={fornecedorId} onChange={e => {
+                  if (e.target.value === "__novo__") { setShowNovoForn(true); return; }
                   setFornecedorId(e.target.value);
                   setFornecedor(fornecedores.find(f => f.id === e.target.value)?.nome ?? "");
                 }} className="inp">
                   <option value="">— nenhum —</option>
                   {fornecedores.map(f => <option key={f.id} value={f.id}>{f.nome}{f.nif ? ` (${f.nif})` : ""}</option>)}
+                  <option value="__novo__">+ Novo fornecedor</option>
                 </select>
+                {showNovoForn && (
+                  <div className="mt-2 p-3 border border-border rounded-md bg-muted/30 space-y-2">
+                    <input autoFocus value={novoFornNome} onChange={e => setNovoFornNome(e.target.value)} placeholder="Nome *" className="inp" />
+                    <input value={novoFornNif} onChange={e => setNovoFornNif(e.target.value)} placeholder="NIF" className="inp" />
+                    <div className="flex gap-2 justify-end">
+                      <button type="button" onClick={() => setShowNovoForn(false)} className="px-3 py-1.5 text-xs rounded-md border border-input">Cancelar</button>
+                      <button type="button" onClick={criarFornecedor} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground">Criar</button>
+                    </div>
+                  </div>
+                )}
               </Field>
             ) : (
               <Field label="Fornecedor *">
-                <select value={fornecedorId} onChange={e => setFornecedorId(e.target.value)} className="inp">
+                <select value={fornecedorId} onChange={e => {
+                  if (e.target.value === "__novo__") { setShowNovoForn(true); return; }
+                  setFornecedorId(e.target.value);
+                }} className="inp">
                   <option value="">— escolher —</option>
                   {fornecedores.map(f => <option key={f.id} value={f.id}>{f.nome}{f.nif ? ` (${f.nif})` : ""}</option>)}
+                  <option value="__novo__">+ Novo fornecedor</option>
                 </select>
+                {showNovoForn && (
+                  <div className="mt-2 p-3 border border-border rounded-md bg-muted/30 space-y-2">
+                    <input autoFocus value={novoFornNome} onChange={e => setNovoFornNome(e.target.value)} placeholder="Nome *" className="inp" />
+                    <input value={novoFornNif} onChange={e => setNovoFornNif(e.target.value)} placeholder="NIF" className="inp" />
+                    <div className="flex gap-2 justify-end">
+                      <button type="button" onClick={() => setShowNovoForn(false)} className="px-3 py-1.5 text-xs rounded-md border border-input">Cancelar</button>
+                      <button type="button" onClick={criarFornecedor} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground">Criar</button>
+                    </div>
+                  </div>
+                )}
               </Field>
             )}
           </div>

@@ -70,6 +70,11 @@ function Editor() {
   const [originalIds, setOriginalIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [fixedIds, setFixedIds] = useState<Record<string, string>>({});
+  const [showNovoColab, setShowNovoColab] = useState(false);
+  const [novoColabNome, setNovoColabNome] = useState("");
+  const [novoColabCargo, setNovoColabCargo] = useState("");
+  // subrubrica suggestions from existing obras
+  const [subSugestoes, setSubSugestoes] = useState<Record<string, string[]>>({});
   const [colaboradores, setColaboradores] = useState<{ id: string; nome: string; cargo: string | null }[]>([]);
   const [respCliente, setRespCliente] = useState("");
   const [respInternoId, setRespInternoId] = useState("");
@@ -89,6 +94,20 @@ function Editor() {
       setClientes((data ?? []) as Cliente[]);
       const { data: colabs } = await (supabase.from("colaboradores") as any).select("id,nome,cargo").eq("ativo", true).order("nome");
       setColaboradores(colabs ?? []);
+      // Load existing subrubrica names for suggestions
+      const { data: existingSubs } = await supabase.from("rubricas").select("nome,parent_id").not("parent_id", "is", null) as any;
+      const { data: rubPais } = await supabase.from("rubricas").select("id,nome").is("parent_id", null) as any;
+      const paiNomeMap = new Map((rubPais ?? []).map((r: any) => [r.id, r.nome]));
+      const sugMap: Record<string, Set<string>> = {};
+      (existingSubs ?? []).forEach((s: any) => {
+        const paiNome = paiNomeMap.get(s.parent_id);
+        if (!paiNome) return;
+        if (!sugMap[paiNome]) sugMap[paiNome] = new Set();
+        sugMap[paiNome].add(s.nome);
+      });
+      const sugObj: Record<string, string[]> = {};
+      Object.entries(sugMap).forEach(([k, v]) => { sugObj[k] = Array.from(v); });
+      setSubSugestoes(sugObj);
     })();
   }, []);
 
@@ -163,6 +182,18 @@ function Editor() {
   function handleFim(val: string) {
     setFim(val);
     if (ini) setPrazoDias(String(calcPrazoFromDates(ini, val)));
+  }
+
+  async function criarColaborador() {
+    if (!novoColabNome.trim()) { toast.error("Nome obrigatório"); return; }
+    const { data, error } = await (supabase.from("colaboradores") as any)
+      .insert({ nome: novoColabNome.trim(), cargo: novoColabCargo || null, ativo: true })
+      .select("id,nome,cargo").maybeSingle();
+    if (error || !data) { toast.error(error?.message ?? "Erro"); return; }
+    setColaboradores((cs: any[]) => [...cs, data].sort((a: any, b: any) => a.nome.localeCompare(b.nome)));
+    setRespInternoId(data.id);
+    setShowNovoColab(false); setNovoColabNome(""); setNovoColabCargo("");
+    toast.success("Colaborador criado");
   }
 
   async function criarCliente() {
@@ -449,12 +480,26 @@ function Editor() {
             <input value={respCliente} onChange={e => setRespCliente(e.target.value)} placeholder="Nome do responsável do cliente" className="input" />
           </F>
           <F label="Responsável interno">
-            <select value={respInternoId} onChange={e => setRespInternoId(e.target.value)} className="input">
+            <select value={respInternoId} onChange={e => {
+              if (e.target.value === "__novo__") { setShowNovoColab(true); return; }
+              setRespInternoId(e.target.value);
+            }} className="input">
               <option value="">— Nenhum —</option>
-              {colaboradores.map(c => (
+              {colaboradores.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.nome}{c.cargo ? ` (${c.cargo})` : ""}</option>
               ))}
+              <option value="__novo__">+ Novo colaborador</option>
             </select>
+            {showNovoColab && (
+              <div className="mt-2 p-3 border border-border rounded-md bg-muted/30 space-y-2">
+                <input value={novoColabNome} onChange={e => setNovoColabNome(e.target.value)} placeholder="Nome *" className="input" />
+                <input value={novoColabCargo} onChange={e => setNovoColabCargo(e.target.value)} placeholder="Cargo" className="input" />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowNovoColab(false)} className="px-3 py-1.5 text-xs rounded-md border border-input">Cancelar</button>
+                  <button onClick={criarColaborador} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground">Criar</button>
+                </div>
+              </div>
+            )}
           </F>
         </div>
       </section>
@@ -535,13 +580,21 @@ function Editor() {
                             {subsCount > 0 && <span className="ml-1 text-xs text-muted-foreground">({subsCount})</span>}
                           </span>
                         ) : (
-                          <input
-                            ref={(el) => { nomeRefs.current[i] = el; }}
-                            value={r.nome}
-                            onChange={(e) => setRow(i, { nome: e.target.value })}
-                            placeholder={isSub ? "Nome da subrubrica..." : "Nome da rubrica..."}
-                            className="input flex-1"
-                          />
+                          <>
+                            <input
+                              ref={(el) => { nomeRefs.current[i] = el; }}
+                              list={isSub ? `sub-sugestoes-${r.parent_id}` : undefined}
+                              value={r.nome}
+                              onChange={(e) => setRow(i, { nome: e.target.value })}
+                              placeholder={isSub ? "Nome da subrubrica..." : "Nome da rubrica..."}
+                              className="input flex-1"
+                            />
+                            {isSub && r.parent_id && subSugestoes[r.parent_id] && (
+                              <datalist id={`sub-sugestoes-${r.parent_id}`}>
+                                {subSugestoes[r.parent_id].map((s, si) => <option key={si} value={s} />)}
+                              </datalist>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
