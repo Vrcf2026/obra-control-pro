@@ -2,135 +2,121 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { eur } from "@/lib/format";
+import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/gestao_/fornecedores_/$id")({
-  component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
+export const Route = createFileRoute("/gestao_/colaboradores_/$id")({
+  component: () => <Protected allow={["admin"]}><Page /></Protected>,
 });
 
-interface Forn { id: string; nome: string; nif: string | null; telefone: string | null; email: string | null; morada: string | null }
-interface Lanc { id: string; obra_id: string; obra_nome: string; rubrica_nome: string; data: string; descricao: string; valor: number; num_documento: string | null }
+interface Colab { id: string; nome: string; cargo: string | null; email: string | null; telefone: string | null }
+interface ObraRow { id: string; nome: string; estado: string; orc_cliente: number; ad_cli: number; gasto: number }
 
 function Page() {
   const { id } = Route.useParams();
-  const [forn, setForn] = useState<Forn | null>(null);
-  const [lancs, setLancs] = useState<Lanc[]>([]);
-  const [ano, setAno] = useState<number>(new Date().getFullYear());
-  const [anos, setAnos] = useState<number[]>([]);
+  const [colab, setColab] = useState<Colab | null>(null);
+  const [rows, setRows] = useState<ObraRow[]>([]);
+
+  async function load() {
+    const { data: c } = await (supabase.from("colaboradores") as any).select("*").eq("id", id).maybeSingle();
+    setColab(c ?? null);
+
+    const { data: obras } = await supabase.from("obras").select("id,nome,estado,orcamento_cliente")
+      .eq("responsavel_interno_id" as any, id).order("created_at", { ascending: false }) as any;
+
+    const ids = (obras ?? []).map((o: any) => o.id);
+    if (ids.length === 0) { setRows([]); return; }
+
+    const [{ data: lan }, { data: ad }] = await Promise.all([
+      supabase.from("lancamentos").select("obra_id,valor").in("obra_id", ids),
+      supabase.from("adendas").select("id,obra_id,valor_cliente").in("obra_id", ids),
+    ]);
+
+    const map = new Map<string, ObraRow>();
+    (obras ?? []).forEach((o: any) => map.set(o.id, {
+      id: o.id, nome: o.nome, estado: o.estado,
+      orc_cliente: Number(o.orcamento_cliente), ad_cli: 0, gasto: 0,
+    }));
+    (ad ?? []).forEach((a: any) => { const o = map.get(a.obra_id); if (o) o.ad_cli += Number(a.valor_cliente); });
+    (lan ?? []).forEach((l: any) => { const o = map.get(l.obra_id); if (o) o.gasto += Number(l.valor); });
+    setRows(Array.from(map.values()));
+  }
 
   useEffect(() => { load(); }, [id]);
 
-  async function load() {
-    const { data: f } = await supabase.from("fornecedores" as any).select("*").eq("id", id).maybeSingle();
-    setForn((f as Forn) ?? null);
+  const totFat = rows.reduce((s, r) => s + r.orc_cliente + r.ad_cli, 0);
+  const totGasto = rows.reduce((s, r) => s + r.gasto, 0);
+  const margem = totFat > 0 ? ((totFat - totGasto) / totFat) * 100 : 0;
 
-    const { data: l } = await supabase.from("lancamentos").select("id,obra_id,data,descricao,valor,num_documento,rubrica_id")
-      .eq("fornecedor_id" as any, id).order("data", { ascending: false });
-
-    if (!l || l.length === 0) { setLancs([]); return; }
-
-    const obraIds = [...new Set((l as any[]).map(x => x.obra_id))];
-    const rubricaIds = [...new Set((l as any[]).map(x => x.rubrica_id).filter(Boolean))];
-
-    const [{ data: obras }, { data: rubricas }] = await Promise.all([
-      supabase.from("obras").select("id,nome").in("id", obraIds),
-      supabase.from("rubricas").select("id,nome,parent_id").in("id", rubricaIds),
-    ]);
-
-    const obraMap = new Map((obras ?? []).map((o: any) => [o.id, o.nome]));
-    const rubMap = new Map((rubricas ?? []).map((r: any) => [r.id, r]));
-
-    const mapped: Lanc[] = (l as any[]).map(x => {
-      const rub = x.rubrica_id ? rubMap.get(x.rubrica_id) : null;
-      let rubNome = "—";
-      if (rub) {
-        if (rub.parent_id) {
-          const parent = rubMap.get(rub.parent_id);
-          rubNome = parent ? `${parent.nome} › ${rub.nome}` : rub.nome;
-        } else rubNome = rub.nome;
-      }
-      return {
-        id: x.id, obra_id: x.obra_id,
-        obra_nome: obraMap.get(x.obra_id) ?? "—",
-        rubrica_nome: rubNome,
-        data: x.data, descricao: x.descricao,
-        valor: Number(x.valor),
-        num_documento: x.num_documento ?? null,
-      };
-    });
-
-    const anosSet = new Set<number>(mapped.map(l => new Date(l.data).getFullYear()));
-    setAnos(Array.from(anosSet).sort((a, b) => b - a));
-    setLancs(mapped);
-  }
-
-  const filtrados = lancs.filter(l => new Date(l.data).getFullYear() === ano);
-  const total = filtrados.reduce((s, l) => s + l.valor, 0);
-
-  if (!forn) return <div className="p-8 text-muted-foreground">A carregar...</div>;
+  if (!colab) return <div className="p-8 text-muted-foreground">A carregar...</div>;
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl">
-      <Link to="/gestao/fornecedores" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-        <ArrowLeft className="w-4 h-4" /> Fornecedores
+      <Link to="/gestao/colaboradores" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+        <ArrowLeft className="w-4 h-4" /> Colaboradores
       </Link>
 
       <div className="bg-card border border-border rounded-lg p-5">
-        <h1 className="text-2xl font-semibold">{forn.nome}</h1>
+        <h1 className="text-2xl font-semibold">{colab.nome}</h1>
         <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-3">
-          {forn.nif && <span>NIF: {forn.nif}</span>}
-          {forn.telefone && <span>{forn.telefone}</span>}
-          {forn.email && <span>{forn.email}</span>}
-          {forn.morada && <span>{forn.morada}</span>}
+          {colab.cargo && <span>{colab.cargo}</span>}
+          {colab.email && <span>{colab.email}</span>}
+          {colab.telefone && <span>{colab.telefone}</span>}
         </div>
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-medium">Lançamentos</h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Ano:</span>
-            <select value={ano} onChange={e => setAno(Number(e.target.value))}
-              className="border border-border rounded-md px-3 py-1.5 text-sm bg-background">
-              {anos.map(a => <option key={a} value={a}>{a}</option>)}
-              {anos.length === 0 && <option value={ano}>{ano}</option>}
-            </select>
-          </div>
-        </div>
-        {filtrados.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">Sem lançamentos no período.</div>
+        <div className="px-5 py-3 border-b border-border"><h2 className="font-medium">Obras</h2></div>
+        {rows.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">Sem obras associadas.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="text-left p-3">Data</th>
-                  <th className="text-left p-3">Obra</th>
-                  <th className="text-left p-3">Rubrica</th>
-                  <th className="text-left p-3">Descrição</th>
-                  <th className="text-left p-3">Nº Doc.</th>
-                  <th className="text-right p-3">Valor</th>
+                  <th className="text-left p-3">Nome</th>
+                  <th className="text-left p-3">Estado</th>
+                  <th className="text-right p-3">Orc. cliente</th>
+                  <th className="text-right p-3">Total faturável</th>
+                  <th className="text-right p-3">Gasto real</th>
+                  <th className="text-right p-3">Margem %</th>
+                  <th className="p-3 w-8"></th>
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map(l => (
-                  <tr key={l.id} className="border-t border-border">
-                    <td className="p-3 tabular-nums text-muted-foreground">{l.data}</td>
-                    <td className="p-3">
-                      <Link to="/obras/$id" params={{ id: l.obra_id }} className="hover:underline text-primary">{l.obra_nome}</Link>
-                    </td>
-                    <td className="p-3 text-muted-foreground">{l.rubrica_nome}</td>
-                    <td className="p-3">{l.descricao || "—"}</td>
-                    <td className="p-3 text-muted-foreground">{l.num_documento || "—"}</td>
-                    <td className={`p-3 text-right tabular-nums font-medium ${l.valor < 0 ? "text-red-500" : ""}`}>{eur(l.valor)}</td>
-                  </tr>
-                ))}
+                {rows.map(r => {
+                  const fat = r.orc_cliente + r.ad_cli;
+                  const mar = fat > 0 ? ((fat - r.gasto) / fat) * 100 : 0;
+                  return (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="p-3">
+                        <Link to="/obras/$id" params={{ id: r.id }} className="font-medium hover:underline text-primary">
+                          {r.nome}
+                        </Link>
+                      </td>
+                      <td className="p-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${estadoColor[r.estado] ?? ""}`}>
+                          {estadoLabel[r.estado] ?? r.estado}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right tabular-nums">{eur(r.orc_cliente)}</td>
+                      <td className="p-3 text-right tabular-nums">{eur(fat)}</td>
+                      <td className="p-3 text-right tabular-nums">{eur(r.gasto)}</td>
+                      <td className="p-3 text-right tabular-nums">{mar.toFixed(1)}%</td>
+                      <td className="p-3 text-center">
+                        <span className={`w-2 h-2 rounded-full inline-block ${mar >= 10 ? "bg-success" : mar >= 0 ? "bg-amber-400" : "bg-danger"}`} />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot className="bg-muted/30 font-medium">
                 <tr>
-                  <td colSpan={5} className="p-3">Total {ano}</td>
-                  <td className={`p-3 text-right tabular-nums ${total < 0 ? "text-red-500" : ""}`}>{eur(total)}</td>
+                  <td colSpan={3} className="p-3">Totais</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totFat)}</td>
+                  <td className="p-3 text-right tabular-nums">{eur(totGasto)}</td>
+                  <td className="p-3 text-right tabular-nums">{margem.toFixed(1)}%</td>
+                  <td></td>
                 </tr>
               </tfoot>
             </table>
