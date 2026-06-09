@@ -11,6 +11,7 @@ export const Route = createFileRoute("/")({ component: Page });
 interface ObraRow {
   id: string; nome: string; cliente: string; cliente_id: string | null; cliente_nome?: string; estado: string;
   orc_cliente: number; orc_interno: number; gasto: number; ad_cli: number; ad_int: number;
+  data_fim_previsto: string | null;
 }
 
 function Page() {
@@ -28,7 +29,7 @@ function Dashboard() {
   async function load() {
     setLoading(true);
     const [{ data: obras }, { data: rubricas }, { data: lanc }, { data: adendas }, { data: adRubs }] = await Promise.all([
-      supabase.from("obras").select("id,nome,cliente,cliente_id,estado,orcamento_cliente").order("created_at", { ascending: false }),
+      supabase.from("obras").select("id,nome,cliente,cliente_id,estado,orcamento_cliente,data_fim_previsto").order("created_at", { ascending: false }),
       supabase.from("rubricas").select("obra_id,orcamento_interno"),
       supabase.from("lancamentos").select("obra_id,valor"),
       supabase.from("adendas").select("id,obra_id,valor_cliente"),
@@ -39,6 +40,7 @@ function Dashboard() {
     (obras ?? []).forEach(o => map.set(o.id, {
       id: o.id, nome: o.nome, cliente: o.cliente, cliente_id: (o as any).cliente_id ?? null, estado: o.estado,
       orc_cliente: Number(o.orcamento_cliente), orc_interno: 0, gasto: 0, ad_cli: 0, ad_int: 0,
+      data_fim_previsto: (o as any).data_fim_previsto ?? null,
     }));
     const cIds = Array.from(new Set(Array.from(map.values()).map(r => r.cliente_id).filter(Boolean))) as string[];
     if (cIds.length) {
@@ -83,6 +85,34 @@ function Dashboard() {
         <Card icon={<AlertTriangle className="w-5 h-5" />} label="Em atenção" value={String(summary.atencao)} accent={summary.atencao > 0 ? "warning" : undefined} />
         <Card icon={<AlertTriangle className="w-5 h-5" />} label="Em risco" value={String(summary.risco)} accent={summary.risco > 0 ? "danger" : undefined} />
       </div>
+
+      {(() => {
+        const hoje = new Date();
+        const alertas = rows
+          .filter(r => ["adjudicada", "em_curso"].includes(r.estado) && r.data_fim_previsto)
+          .map(r => ({ ...r, dias: Math.round((new Date(r.data_fim_previsto!).getTime() - hoje.getTime()) / 86400000) }))
+          .filter(r => r.dias <= 30)
+          .sort((a, b) => a.dias - b.dias);
+        if (alertas.length === 0) return null;
+        return (
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Obras com prazo a terminar (próximos 30 dias)</span>
+            </div>
+            <div className="space-y-1.5">
+              {alertas.map(r => (
+                <div key={r.id} className="flex items-center justify-between text-sm">
+                  <Link to="/obras/$id" params={{ id: r.id }} className="font-medium hover:underline text-primary">{r.nome}</Link>
+                  <span className={`font-medium tabular-nums ${r.dias < 0 ? "text-red-500" : r.dias <= 7 ? "text-red-400" : "text-amber-500"}`}>
+                    {r.dias < 0 ? `${Math.abs(r.dias)} dias em atraso` : r.dias === 0 ? "Termina hoje" : `${r.dias} dias`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-5 py-3 border-b border-border"><h2 className="font-medium">Obras</h2></div>
