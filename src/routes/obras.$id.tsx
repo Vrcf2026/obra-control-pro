@@ -1268,5 +1268,7 @@ function FaturaPanel({
 }
 
 // ===== Modal helpers (re-exported para outros ficheiros) =====
-export { Modal, Field, ModalActions } from "@/components/Modal";
+import { Modal, Field, ModalActions } from "@/components/Modal";
+export { Modal, Field, ModalActions };
+
 
