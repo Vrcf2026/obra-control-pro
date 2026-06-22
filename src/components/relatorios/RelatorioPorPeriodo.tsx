@@ -102,7 +102,7 @@ export function RelatorioPorPeriodo({ lancamentos, faturas, obras }: Props) {
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
             <XAxis dataKey="mes" />
             <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: number) => eur(v)} />
+            <Tooltip formatter={(v) => eur(Number(v))} />
             <Legend />
             <Bar dataKey="faturacao" name="Faturação" fill="#16a34a" />
             <Bar dataKey="gasto" name="Gasto" fill="#dc2626" />
