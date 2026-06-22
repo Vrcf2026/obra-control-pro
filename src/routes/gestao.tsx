@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { Modal, Field } from "./obras.$id";
+import { Modal, Field } from "@/components/Modal";
 import { Plus, Users, Edit, X, Trash2, Copy, MapPin } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
@@ -287,5 +287,3 @@ function DeleteModal({ obra, onClose, onDeleted }: { obra: Obra; onClose: () => 
   );
 }
 
-// Re-export Field so other files can keep import
-export { Field };
