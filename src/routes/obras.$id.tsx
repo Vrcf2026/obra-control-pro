@@ -7,6 +7,7 @@ import { eur, estadoLabel, estadoColor } from "@/lib/format";
 import { DespesaPanel } from "@/components/DespesaPanel";
 import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil, ChevronDown, ChevronRight, MapPin } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { Modal, Field, ModalActions } from "@/components/Modal";
 import { SkeletonCard, SkeletonTable } from "@/components/SkeletonTable";
 import { toast } from "sonner";
 import {
@@ -1268,7 +1269,7 @@ function FaturaPanel({
 }
 
 // ===== Modal helpers (re-exported para outros ficheiros) =====
-import { Modal, Field, ModalActions } from "@/components/Modal";
 export { Modal, Field, ModalActions };
+
 
 
