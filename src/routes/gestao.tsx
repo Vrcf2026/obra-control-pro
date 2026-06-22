@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { Modal, Field } from "./obras.$id";
+import { Modal, Field } from "@/components/Modal";
 import { Plus, Users, Edit, X, Trash2, Copy, MapPin } from "lucide-react";
 import { estadoLabel, eur } from "@/lib/format";
 import { EstadoFilter, ESTADOS_DEFAULT } from "@/components/EstadoFilter";
@@ -29,7 +29,7 @@ function Gestao() {
   useEffect(() => { load(); }, []);
 
   async function duplicarObra(o: Obra) {
-    const { data: rubricas } = await supabase.from("rubricas").select("nome,orcamento_interno").eq("obra_id", o.id).is("parent_id" as any, null);
+    const { data: rubricas } = await supabase.from("rubricas").select("nome,orcamento_interno").eq("obra_id", o.id).is("parent_id", null);
     const { data: nova, error } = await supabase.from("obras").insert({
       nome: `${o.nome} (cópia)`, cliente: o.cliente, cliente_id: o.cliente_id,
       localizacao: o.localizacao, estado: "orcamentacao", orcamento_cliente: o.orcamento_cliente,
@@ -44,8 +44,8 @@ function Gestao() {
 
   async function load() {
     const { data } = await supabase.from("obras").select("id,nome,cliente,cliente_id,localizacao,estado,orcamento_cliente,data_fim_previsto,responsavel_interno_id").order("created_at", { ascending: false });
-    const { data: colabs } = await supabase.from("colaboradores" as any).select("id,nome").eq("ativo", true);
-    setColaboradores((colabs ?? []) as unknown as Colaborador[]);
+    const { data: colabs } = await supabase.from("colaboradores").select("id,nome").eq("ativo", true);
+    setColaboradores((colabs ?? []) as Colaborador[]);
     const arr = (data ?? []) as Obra[];
     const ids = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];
     if (ids.length) {
@@ -253,20 +253,7 @@ function DeleteModal({ obra, onClose, onDeleted }: { obra: Obra; onClose: () => 
       const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
       if (authErr) { toast.error("Password incorrecta"); setLoading(false); return; }
 
-      // Cascade delete dependent rows (no FK cascades defined)
-      const { data: adendas } = await supabase.from("adendas").select("id").eq("obra_id", obra.id);
-      const adendaIds = (adendas ?? []).map((a: any) => a.id);
-      if (adendaIds.length) {
-        await supabase.from("adenda_rubricas").delete().in("adenda_id", adendaIds);
-      }
-      await Promise.all([
-        supabase.from("lancamentos").delete().eq("obra_id", obra.id),
-        supabase.from("rubricas").delete().eq("obra_id", obra.id),
-        supabase.from("obra_utilizadores").delete().eq("obra_id", obra.id),
-        supabase.from("adendas").delete().eq("obra_id", obra.id),
-        supabase.from("faturas_emitidas").delete().eq("obra_id", obra.id),
-        supabase.from("obra_estado_log").delete().eq("obra_id", obra.id),
-      ]);
+      // FK cascades handle dependent rows (rubricas, lançamentos, adendas, etc.)
       const { error } = await supabase.from("obras").delete().eq("id", obra.id);
       if (error) { toast.error(error.message); setLoading(false); return; }
       toast.success("Obra eliminada");
@@ -300,5 +287,3 @@ function DeleteModal({ obra, onClose, onDeleted }: { obra: Obra; onClose: () => 
   );
 }
 
-// Re-export Field so other files can keep import
-export { Field };

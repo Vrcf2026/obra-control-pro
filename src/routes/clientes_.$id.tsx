@@ -10,7 +10,7 @@ import { SkeletonCard, SkeletonTable } from "@/components/SkeletonTable";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes_/$id")({
-  component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
+  component: () => <Protected allow={["admin"]}><Page /></Protected>,
 });
 
 interface Cliente { id: string; nome: string; nif: string | null; telefone: string | null }

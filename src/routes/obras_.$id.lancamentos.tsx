@@ -91,7 +91,7 @@ function Page() {
     const linhasRaw = ((l ?? []) as any[]).map((x) => ({ ...x, valor: Number(x.valor) }));
     const fornIds = [...new Set(linhasRaw.map((x: any) => x.fornecedor_id).filter(Boolean))];
     if (fornIds.length > 0) {
-      const { data: forns } = await supabase.from("fornecedores" as any).select("id,nome").in("id", fornIds);
+      const { data: forns } = await supabase.from("fornecedores").select("id,nome").in("id", fornIds);
       setFornMap(new Map(((forns ?? []) as any[]).map((f: any) => [f.id, f.nome])));
     }
     setLinhas(linhasRaw);

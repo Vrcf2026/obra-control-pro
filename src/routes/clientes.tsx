@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/clientes")({
-  component: () => <Protected allow={["admin", "gestor"]}><Page /></Protected>,
+  component: () => <Protected allow={["admin"]}><Page /></Protected>,
 });
 
 interface Cliente { id: string; nome: string; nif: string | null; telefone: string | null }

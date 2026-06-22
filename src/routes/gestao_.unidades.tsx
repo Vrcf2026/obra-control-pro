@@ -25,33 +25,33 @@ function Page() {
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("unidades" as any).select("*").order("ordem");
-    setRows((data ?? []) as unknown as Unidade[]);
+    const { data } = await supabase.from("unidades").select("*").order("ordem");
+    setRows((data ?? []) as Unidade[]);
   }
 
   async function criar() {
     if (!novoNome.trim() || !novoSigla.trim()) { toast.error("Nome e sigla obrigatórios"); return; }
     const maxOrdem = rows.reduce((m, r) => Math.max(m, r.ordem), 0);
-    const { error } = await supabase.from("unidades" as any).insert({ nome: novoNome.trim(), sigla: novoSigla.trim(), ordem: maxOrdem + 1 });
+    const { error } = await supabase.from("unidades").insert({ nome: novoNome.trim(), sigla: novoSigla.trim(), ordem: maxOrdem + 1 });
     if (error) { toast.error(error.message); return; }
     toast.success("Unidade criada"); setShowNovo(false); setNovoNome(""); setNovoSigla(""); load();
   }
 
   async function guardar(id: string) {
     if (!editNome.trim() || !editSigla.trim()) { toast.error("Nome e sigla obrigatórios"); return; }
-    const { error } = await supabase.from("unidades" as any).update({ nome: editNome.trim(), sigla: editSigla.trim() }).eq("id", id);
+    const { error } = await supabase.from("unidades").update({ nome: editNome.trim(), sigla: editSigla.trim() }).eq("id", id);
     if (error) { toast.error(error.message); return; }
     setEditId(null); load();
   }
 
   async function pedirApagar(id: string) {
-    const { data } = await supabase.from("lancamentos").select("id").eq("unidade_id" as any, id).limit(1);
+    const { data } = await supabase.from("lancamentos").select("id").eq("unidade_id", id).limit(1);
     if (data && data.length > 0) { toast.error("Unidade em uso — não pode ser eliminada"); return; }
     setDelId(id);
   }
 
   async function apagar(id: string) {
-    const { error } = await supabase.from("unidades" as any).delete().eq("id", id);
+    const { error } = await supabase.from("unidades").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removida"); load(); }
   }
 
@@ -62,8 +62,8 @@ function Page() {
     if (j < 0 || j >= sorted.length) return;
     const a = sorted[i], b = sorted[j];
     await Promise.all([
-      supabase.from("unidades" as any).update({ ordem: b.ordem }).eq("id", a.id),
-      supabase.from("unidades" as any).update({ ordem: a.ordem }).eq("id", b.id),
+      supabase.from("unidades").update({ ordem: b.ordem }).eq("id", a.id),
+      supabase.from("unidades").update({ ordem: a.ordem }).eq("id", b.id),
     ]);
     load();
   }

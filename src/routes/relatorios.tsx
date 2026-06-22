@@ -62,7 +62,7 @@ function Relatorios() {
       supabase.from("lancamentos").select("*"),
       supabase.from("adendas").select("*"),
       supabase.from("adenda_rubricas").select("id,adenda_id,nome,valor"),
-      supabase.from("fornecedores" as any).select("id,nome,nif").eq("ativo", true).order("nome"),
+      supabase.from("fornecedores").select("id,nome,nif").eq("ativo", true).order("nome"),
     ]);
     const intMap = new Map<string, number>();
     ((ar ?? []) as AdRub[]).forEach(x => intMap.set(x.adenda_id, (intMap.get(x.adenda_id) ?? 0) + Number(x.valor)));
@@ -71,7 +71,7 @@ function Relatorios() {
     setLancamentos(((l ?? []) as Lanc[]).map(x => ({ ...x, valor: Number(x.valor) })));
     setAdendas(((a ?? []) as any[]).map(x => ({ ...x, valor_cliente: Number(x.valor_cliente), valor_interno: intMap.get(x.id) ?? 0 })) as Adenda[]);
     setAdRubs(((ar ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })));
-    setFornecedores((f ?? []) as unknown as Fornecedor[]);
+    setFornecedores((f ?? []) as Fornecedor[]);
     setLoading(false);
   }
 
