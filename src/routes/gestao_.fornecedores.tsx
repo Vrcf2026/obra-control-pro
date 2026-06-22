@@ -26,7 +26,7 @@ function Page() {
 
   async function load() {
     const { data } = await supabase.from("fornecedores").select("*").order("nome");
-    setRows((data ?? []) as unknown as Forn[]);
+    setRows((data ?? []) as Forn[]);
   }
 
   async function criar() {

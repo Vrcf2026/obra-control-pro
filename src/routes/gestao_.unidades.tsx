@@ -26,7 +26,7 @@ function Page() {
 
   async function load() {
     const { data } = await supabase.from("unidades").select("*").order("ordem");
-    setRows((data ?? []) as unknown as Unidade[]);
+    setRows((data ?? []) as Unidade[]);
   }
 
   async function criar() {
