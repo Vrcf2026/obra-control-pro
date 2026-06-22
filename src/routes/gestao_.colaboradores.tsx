@@ -175,7 +175,7 @@ function Page() {
         title="Remover colaborador"
         description="Confirme com a sua password."
         onClose={() => setDelId(null)}
-        onConfirmed={() => delId && apagar(delId)}
+        onConfirmed={() => { if (delId) apagar(delId); }}
       />
       <style>{`.inp{width:100%;border:1px solid var(--border);background:var(--background);border-radius:6px;padding:6px 10px;font-size:13px;outline:none}`}</style>
     </div>

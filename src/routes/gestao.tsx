@@ -45,7 +45,7 @@ function Gestao() {
   async function load() {
     const { data } = await supabase.from("obras").select("id,nome,cliente,cliente_id,localizacao,estado,orcamento_cliente,data_fim_previsto,responsavel_interno_id").order("created_at", { ascending: false });
     const { data: colabs } = await supabase.from("colaboradores" as any).select("id,nome").eq("ativo", true);
-    setColaboradores((colabs ?? []) as Colaborador[]);
+    setColaboradores((colabs ?? []) as unknown as Colaborador[]);
     const arr = (data ?? []) as Obra[];
     const ids = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];
     if (ids.length) {

@@ -97,7 +97,7 @@ function Editor() {
       // Load existing subrubrica names for suggestions
       const { data: existingSubs } = await supabase.from("rubricas").select("nome,parent_id").not("parent_id", "is", null) as any;
       const { data: rubPais } = await supabase.from("rubricas").select("id,nome").is("parent_id", null) as any;
-      const paiNomeMap = new Map((rubPais ?? []).map((r: any) => [r.id, r.nome]));
+      const paiNomeMap = new Map<string, string>((rubPais ?? []).map((r: any) => [r.id as string, r.nome as string]));
       const sugMap: Record<string, Set<string>> = {};
       (existingSubs ?? []).forEach((s: any) => {
         const paiNome = paiNomeMap.get(s.parent_id);
