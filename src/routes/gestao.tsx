@@ -253,20 +253,7 @@ function DeleteModal({ obra, onClose, onDeleted }: { obra: Obra; onClose: () => 
       const { error: authErr } = await supabase.auth.signInWithPassword({ email, password });
       if (authErr) { toast.error("Password incorrecta"); setLoading(false); return; }
 
-      // Cascade delete dependent rows (no FK cascades defined)
-      const { data: adendas } = await supabase.from("adendas").select("id").eq("obra_id", obra.id);
-      const adendaIds = (adendas ?? []).map((a: any) => a.id);
-      if (adendaIds.length) {
-        await supabase.from("adenda_rubricas").delete().in("adenda_id", adendaIds);
-      }
-      await Promise.all([
-        supabase.from("lancamentos").delete().eq("obra_id", obra.id),
-        supabase.from("rubricas").delete().eq("obra_id", obra.id),
-        supabase.from("obra_utilizadores").delete().eq("obra_id", obra.id),
-        supabase.from("adendas").delete().eq("obra_id", obra.id),
-        supabase.from("faturas_emitidas").delete().eq("obra_id", obra.id),
-        supabase.from("obra_estado_log").delete().eq("obra_id", obra.id),
-      ]);
+      // FK cascades handle dependent rows (rubricas, lançamentos, adendas, etc.)
       const { error } = await supabase.from("obras").delete().eq("id", obra.id);
       if (error) { toast.error(error.message); setLoading(false); return; }
       toast.success("Obra eliminada");
