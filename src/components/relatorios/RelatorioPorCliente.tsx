@@ -93,7 +93,7 @@ export function RelatorioPorCliente({ obras, rubricas, lancamentos, adendas, cli
               {rows.map(r => {
                 const isOpen = open.has(r.key);
                 return (
-                  <>
+                  <Fragment key={r.key}>
                     <tr key={r.key} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => toggle(r.key)}>
                       <td className="p-3"><ChevronRight className={`w-4 h-4 transition-transform ${isOpen ? "rotate-90" : ""}`} /></td>
                       <td className="p-3 font-medium">{r.nome}</td>
@@ -114,7 +114,7 @@ export function RelatorioPorCliente({ obras, rubricas, lancamentos, adendas, cli
                         <td className={`p-2 text-right tabular-nums ${o.pct >= 0 ? "text-muted-foreground" : "text-danger"}`}>{o.pct.toFixed(1)}%</td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 );
               })}
               {rows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Sem dados.</td></tr>}
