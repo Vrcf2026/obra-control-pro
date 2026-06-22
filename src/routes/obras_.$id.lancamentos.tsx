@@ -143,6 +143,20 @@ function Page() {
     return false;
   }
 
+  function exportarExcel() {
+    const rows = filtrados.flatMap(g => g.linhas.map(l => ({
+      Data: g.data,
+      Fornecedor: g.fornecedor ?? "",
+      Descrição: g.descricao,
+      Rubrica: l.rubricaLabel,
+      Valor: l.valor,
+    })));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Lançamentos");
+    XLSX.writeFile(wb, `lancamentos-${obraNome || id}.xlsx`);
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div>

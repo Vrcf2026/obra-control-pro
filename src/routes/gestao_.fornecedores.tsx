@@ -26,7 +26,7 @@ function Page() {
 
   async function load() {
     const { data } = await supabase.from("fornecedores" as any).select("*").order("nome");
-    setRows((data ?? []) as Forn[]);
+    setRows((data ?? []) as unknown as Forn[]);
   }
 
   async function criar() {
@@ -156,7 +156,7 @@ function Page() {
       </div>
 
       <PasswordConfirmDialog open={!!delId} title="Remover fornecedor" description="Confirme com a sua password."
-        onClose={() => setDelId(null)} onConfirmed={() => delId && apagar(delId)} />
+        onClose={() => setDelId(null)} onConfirmed={() => { if (delId) apagar(delId); }} />
       <style>{`.inp{width:100%;border:1px solid var(--border);background:var(--background);border-radius:6px;padding:6px 10px;font-size:13px;outline:none}`}</style>
     </div>
   );

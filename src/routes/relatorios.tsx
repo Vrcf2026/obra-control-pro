@@ -71,7 +71,7 @@ function Relatorios() {
     setLancamentos(((l ?? []) as Lanc[]).map(x => ({ ...x, valor: Number(x.valor) })));
     setAdendas(((a ?? []) as any[]).map(x => ({ ...x, valor_cliente: Number(x.valor_cliente), valor_interno: intMap.get(x.id) ?? 0 })) as Adenda[]);
     setAdRubs(((ar ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })));
-    setFornecedores((f ?? []) as Fornecedor[]);
+    setFornecedores((f ?? []) as unknown as Fornecedor[]);
     setLoading(false);
   }
 

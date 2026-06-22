@@ -77,7 +77,7 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
         .eq("obra_id", obraId).not("parent_id", "is", null) as any;
       const nomePaiMap: Record<string, string> = {};
       rubricasPai.forEach(r => { nomePaiMap[r.nome.trim().toLowerCase()] = r.id; });
-      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id))];
+      const paiPadraoIds = [...new Set((padroes ?? []).map((p: any) => p.parent_id))] as string[];
       let nomePaiPadrao: Record<string, string> = {};
       if (paiPadraoIds.length > 0) {
         const { data: paisPadrao } = await supabase.from("rubricas_padrao").select("id,nome").in("id", paiPadraoIds) as any;
@@ -100,11 +100,11 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
 
       // Load unidades
       const { data: uns } = await supabase.from("unidades" as any).select("id,nome,sigla").order("ordem");
-      setUnidades((uns ?? []) as Unidade[]);
+      setUnidades((uns ?? []) as unknown as Unidade[]);
 
       // Load fornecedores
       const { data: forns } = await supabase.from("fornecedores" as any).select("id,nome,nif").eq("ativo", true).order("nome");
-      setFornecedores((forns ?? []) as Fornecedor[]);
+      setFornecedores((forns ?? []) as unknown as Fornecedor[]);
     })();
   }, [obraId]);
 
@@ -132,7 +132,7 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
       .insert({ nome: novoFornNome.trim(), nif: novoFornNif || null, ativo: true })
       .select("id,nome,nif").maybeSingle();
     if (error || !data) { toast.error(error?.message ?? "Erro"); return; }
-    setFornecedores(fs => [...fs, data as Fornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setFornecedores(fs => [...fs, data as unknown as Fornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
     setFornecedorId((data as any).id);
     setShowNovoForn(false); setNovoFornNome(""); setNovoFornNif("");
     toast.success("Fornecedor criado");
