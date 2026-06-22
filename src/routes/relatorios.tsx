@@ -112,14 +112,29 @@ function Relatorios() {
       </div>
 
       <Tabs defaultValue="dashboard">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="clientes">Por Cliente</TabsTrigger>
+          <TabsTrigger value="rubricas">Por Rubrica</TabsTrigger>
+          <TabsTrigger value="periodo">Por Período</TabsTrigger>
           <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-8">
           <Dashboard obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} fornecedores={fornecedores} />
+        </TabsContent>
+
+        <TabsContent value="clientes" className="space-y-6">
+          <RelatorioPorCliente obras={obras as any} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} clientes={clientes} />
+        </TabsContent>
+
+        <TabsContent value="rubricas" className="space-y-6">
+          <RelatorioPorRubrica obras={obras} rubricas={rubricas} lancamentos={lancamentos} adRubs={adRubs} adendas={adendas} />
+        </TabsContent>
+
+        <TabsContent value="periodo" className="space-y-6">
+          <RelatorioPorPeriodo lancamentos={lancamentos} faturas={faturas} obras={obras} />
         </TabsContent>
 
         <TabsContent value="fornecedores" className="space-y-6">
@@ -132,6 +147,7 @@ function Relatorios() {
             geradoPor={nome || "—"}
           />
         </TabsContent>
+
       </Tabs>
     </div>
   );
