@@ -99,11 +99,11 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
       setSubsPorPai(map);
 
       // Load unidades
-      const { data: uns } = await supabase.from("unidades" as any).select("id,nome,sigla").order("ordem");
+      const { data: uns } = await supabase.from("unidades").select("id,nome,sigla").order("ordem");
       setUnidades((uns ?? []) as unknown as Unidade[]);
 
       // Load fornecedores
-      const { data: forns } = await supabase.from("fornecedores" as any).select("id,nome,nif").eq("ativo", true).order("nome");
+      const { data: forns } = await supabase.from("fornecedores").select("id,nome,nif").eq("ativo", true).order("nome");
       setFornecedores((forns ?? []) as unknown as Fornecedor[]);
     })();
   }, [obraId]);
@@ -128,7 +128,7 @@ export function DespesaPanel({ obraId, rubricas: rubricasInit, onClose, onSaved 
 
   async function criarFornecedor() {
     if (!novoFornNome.trim()) { toast.error("Nome obrigatório"); return; }
-    const { data, error } = await supabase.from("fornecedores" as any)
+    const { data, error } = await supabase.from("fornecedores")
       .insert({ nome: novoFornNome.trim(), nif: novoFornNif || null, ativo: true })
       .select("id,nome,nif").maybeSingle();
     if (error || !data) { toast.error(error?.message ?? "Erro"); return; }

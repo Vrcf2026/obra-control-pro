@@ -68,7 +68,7 @@ function Page() {
 
   async function pedirApagar(id: string) {
     // Check if colaborador has obras associated
-    const { data: obras } = await supabase.from("obras").select("id").eq("responsavel_interno_id" as any, id).limit(1);
+    const { data: obras } = await supabase.from("obras").select("id").eq("responsavel_interno_id", id).limit(1);
     if (obras && obras.length > 0) {
       toast.error("Colaborador associado a obras — não pode ser eliminado");
       return;

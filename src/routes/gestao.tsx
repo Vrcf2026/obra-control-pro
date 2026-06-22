@@ -29,7 +29,7 @@ function Gestao() {
   useEffect(() => { load(); }, []);
 
   async function duplicarObra(o: Obra) {
-    const { data: rubricas } = await supabase.from("rubricas").select("nome,orcamento_interno").eq("obra_id", o.id).is("parent_id" as any, null);
+    const { data: rubricas } = await supabase.from("rubricas").select("nome,orcamento_interno").eq("obra_id", o.id).is("parent_id", null);
     const { data: nova, error } = await supabase.from("obras").insert({
       nome: `${o.nome} (cópia)`, cliente: o.cliente, cliente_id: o.cliente_id,
       localizacao: o.localizacao, estado: "orcamentacao", orcamento_cliente: o.orcamento_cliente,
@@ -44,7 +44,7 @@ function Gestao() {
 
   async function load() {
     const { data } = await supabase.from("obras").select("id,nome,cliente,cliente_id,localizacao,estado,orcamento_cliente,data_fim_previsto,responsavel_interno_id").order("created_at", { ascending: false });
-    const { data: colabs } = await supabase.from("colaboradores" as any).select("id,nome").eq("ativo", true);
+    const { data: colabs } = await supabase.from("colaboradores").select("id,nome").eq("ativo", true);
     setColaboradores((colabs ?? []) as unknown as Colaborador[]);
     const arr = (data ?? []) as Obra[];
     const ids = Array.from(new Set(arr.map(o => o.cliente_id).filter(Boolean))) as string[];

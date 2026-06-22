@@ -24,7 +24,7 @@ function Page() {
     setColab(c ?? null);
 
     const { data: obras } = await supabase.from("obras").select("id,nome,estado,orcamento_cliente")
-      .eq("responsavel_interno_id" as any, id).order("created_at", { ascending: false }) as any;
+      .eq("responsavel_interno_id", id).order("created_at", { ascending: false }) as any;
 
     const ids = (obras ?? []).map((o: any) => o.id);
     if (ids.length === 0) { setRows([]); return; }

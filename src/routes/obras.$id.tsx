@@ -163,7 +163,7 @@ function Detalhe() {
 
   async function loadLog() {
     const { data: logs } = await supabase
-      .from("obra_estado_log" as any)
+      .from("obra_estado_log")
       .select("*")
       .eq("obra_id", id)
       .order("alterado_em", { ascending: false });
@@ -296,7 +296,7 @@ function Detalhe() {
                     toast.error(error.message);
                     return;
                   }
-                  await supabase.from("obra_estado_log" as any).insert({
+                  await supabase.from("obra_estado_log").insert({
                     obra_id: obra.id,
                     estado_anterior: anterior,
                     estado_novo: novo,

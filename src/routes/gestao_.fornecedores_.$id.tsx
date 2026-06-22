@@ -24,11 +24,11 @@ function Page() {
   useEffect(() => { load(); }, [id]);
 
   async function load() {
-    const { data: f } = await supabase.from("fornecedores" as any).select("*").eq("id", id).maybeSingle();
+    const { data: f } = await supabase.from("fornecedores").select("*").eq("id", id).maybeSingle();
     setForn((f as unknown as Forn) ?? null);
 
     const { data: l } = await supabase.from("lancamentos").select("id,obra_id,data,descricao,valor,num_documento,rubrica_id")
-      .eq("fornecedor_id" as any, id).order("data", { ascending: false });
+      .eq("fornecedor_id", id).order("data", { ascending: false });
 
     if (!l || l.length === 0) { setLancs([]); return; }
 

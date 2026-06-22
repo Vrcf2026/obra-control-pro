@@ -25,13 +25,13 @@ function Page() {
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("fornecedores" as any).select("*").order("nome");
+    const { data } = await supabase.from("fornecedores").select("*").order("nome");
     setRows((data ?? []) as unknown as Forn[]);
   }
 
   async function criar() {
     if (!novoForm.nome.trim()) { toast.error("Nome obrigatório"); return; }
-    const { error } = await supabase.from("fornecedores" as any).insert({
+    const { error } = await supabase.from("fornecedores").insert({
       nome: novoForm.nome.trim(), nif: novoForm.nif || null,
       telefone: novoForm.telefone || null, email: novoForm.email || null,
       morada: novoForm.morada || null,
@@ -42,7 +42,7 @@ function Page() {
 
   async function guardar(id: string) {
     if (!form.nome.trim()) { toast.error("Nome obrigatório"); return; }
-    const { error } = await supabase.from("fornecedores" as any).update({
+    const { error } = await supabase.from("fornecedores").update({
       nome: form.nome.trim(), nif: form.nif || null, telefone: form.telefone || null,
       email: form.email || null, morada: form.morada || null, ativo: form.ativo,
     }).eq("id", id);
@@ -51,13 +51,13 @@ function Page() {
   }
 
   async function pedirApagar(id: string) {
-    const { data } = await supabase.from("lancamentos").select("id").eq("fornecedor_id" as any, id).limit(1);
+    const { data } = await supabase.from("lancamentos").select("id").eq("fornecedor_id", id).limit(1);
     if (data && data.length > 0) { toast.error("Fornecedor com lançamentos — não pode ser eliminado"); return; }
     setDelId(id);
   }
 
   async function apagar(id: string) {
-    const { error } = await supabase.from("fornecedores" as any).delete().eq("id", id);
+    const { error } = await supabase.from("fornecedores").delete().eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Removido"); load(); }
   }
 
