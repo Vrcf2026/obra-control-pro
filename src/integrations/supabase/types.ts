@@ -144,6 +144,36 @@ export type Database = {
         }
         Relationships: []
       }
+      colaboradores: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
       faturas_emitidas: {
         Row: {
           created_at: string
@@ -182,6 +212,39 @@ export type Database = {
           },
         ]
       }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string | null
+          id: string
+          morada: string | null
+          nif: string | null
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          morada?: string | null
+          nif?: string | null
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          morada?: string | null
+          nif?: string | null
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
       lancamentos: {
         Row: {
           adenda_rubrica_id: string | null
@@ -189,11 +252,16 @@ export type Database = {
           data: string
           descricao: string
           fornecedor: string | null
+          fornecedor_id: string | null
           id: string
+          num_documento: string | null
           obra_id: string
+          preco_unitario: number | null
+          quantidade: number | null
           registado_por: string | null
           rubrica_id: string | null
           rubrica_nome: string | null
+          unidade_id: string | null
           valor: number
         }
         Insert: {
@@ -202,11 +270,16 @@ export type Database = {
           data?: string
           descricao?: string
           fornecedor?: string | null
+          fornecedor_id?: string | null
           id?: string
+          num_documento?: string | null
           obra_id: string
+          preco_unitario?: number | null
+          quantidade?: number | null
           registado_por?: string | null
           rubrica_id?: string | null
           rubrica_nome?: string | null
+          unidade_id?: string | null
           valor?: number
         }
         Update: {
@@ -215,11 +288,16 @@ export type Database = {
           data?: string
           descricao?: string
           fornecedor?: string | null
+          fornecedor_id?: string | null
           id?: string
+          num_documento?: string | null
           obra_id?: string
+          preco_unitario?: number | null
+          quantidade?: number | null
           registado_por?: string | null
           rubrica_id?: string | null
           rubrica_nome?: string | null
+          unidade_id?: string | null
           valor?: number
         }
         Relationships: [
@@ -228,6 +306,13 @@ export type Database = {
             columns: ["adenda_rubrica_id"]
             isOneToOne: false
             referencedRelation: "adenda_rubricas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
             referencedColumns: ["id"]
           },
           {
@@ -242,6 +327,13 @@ export type Database = {
             columns: ["rubrica_id"]
             isOneToOne: false
             referencedRelation: "rubricas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
         ]
@@ -326,6 +418,8 @@ export type Database = {
           nome: string
           orcamento_cliente: number
           prazo_dias: number | null
+          responsavel_cliente: string | null
+          responsavel_interno_id: string | null
         }
         Insert: {
           cliente: string
@@ -339,6 +433,8 @@ export type Database = {
           nome: string
           orcamento_cliente?: number
           prazo_dias?: number | null
+          responsavel_cliente?: string | null
+          responsavel_interno_id?: string | null
         }
         Update: {
           cliente?: string
@@ -352,6 +448,8 @@ export type Database = {
           nome?: string
           orcamento_cliente?: number
           prazo_dias?: number | null
+          responsavel_cliente?: string | null
+          responsavel_interno_id?: string | null
         }
         Relationships: [
           {
@@ -359,6 +457,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obras_responsavel_interno_id_fkey"
+            columns: ["responsavel_interno_id"]
+            isOneToOne: false
+            referencedRelation: "colaboradores"
             referencedColumns: ["id"]
           },
         ]
@@ -460,6 +565,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      unidades: {
+        Row: {
+          id: string
+          nome: string
+          ordem: number
+          sigla: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          ordem?: number
+          sigla: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          ordem?: number
+          sigla?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
