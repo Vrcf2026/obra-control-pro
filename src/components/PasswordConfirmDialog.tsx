@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { verifyMyPassword } from "@/lib/verify-password.functions";
 import { toast } from "sonner";
 
 export function PasswordConfirmDialog({
@@ -19,6 +20,7 @@ export function PasswordConfirmDialog({
 }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const verify = useServerFn(verifyMyPassword);
 
   if (!open) return null;
 
@@ -26,11 +28,12 @@ export function PasswordConfirmDialog({
     if (!password) { toast.error("Introduza a sua password"); return; }
     setLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const email = userData.user?.email;
-      if (!email) { toast.error("Sessão inválida"); return; }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { toast.error("Password incorrecta"); return; }
+      try {
+        await verify({ data: { password } });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Password incorrecta");
+        return;
+      }
       await onConfirmed();
       setPassword("");
       onClose();
