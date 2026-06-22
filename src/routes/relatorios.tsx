@@ -15,6 +15,10 @@ import { TrendingUp, Percent, Wallet, AlertTriangle } from "lucide-react";
 import { estadoLabel as ESTADO_LABEL } from "@/lib/format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { RelatorioPorCliente } from "@/components/relatorios/RelatorioPorCliente";
+import { RelatorioPorRubrica } from "@/components/relatorios/RelatorioPorRubrica";
+import { RelatorioPorPeriodo } from "@/components/relatorios/RelatorioPorPeriodo";
+
 
 export const Route = createFileRoute("/relatorios")({ component: Page });
 
@@ -32,6 +36,9 @@ interface Lanc { id: string; obra_id: string; rubrica_id: string | null; adenda_
 interface Adenda { id: string; obra_id: string; data: string; descricao: string; valor_cliente: number; valor_interno: number; }
 interface AdRub { id: string; adenda_id: string; nome: string; valor: number }
 interface Fornecedor { id: string; nome: string; nif: string | null }
+interface Cliente { id: string; nome: string }
+interface Fatura { id: string; obra_id: string; data: string; valor: number; num_fatura: string | null }
+
 
 const PALETTE = ["#1a5fa8","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#6366f1"];
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -50,19 +57,23 @@ function Relatorios() {
   const [adRubs, setAdRubs] = useState<AdRub[]>([]);
   const [loading, setLoading] = useState(true);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [faturas, setFaturas] = useState<Fatura[]>([]);
 
     useEffect(() => { document.title = "Relatórios — ObraControl"; return () => { document.title = "ObraControl"; }; }, []);
   useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
-    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: ar }, { data: f }] = await Promise.all([
+    const [{ data: o }, { data: r }, { data: l }, { data: a }, { data: ar }, { data: f }, { data: c }, { data: fe }] = await Promise.all([
       supabase.from("obras").select("*").order("nome"),
       supabase.from("rubricas").select("id,obra_id,nome,orcamento_interno,parent_id").order("nome"),
       supabase.from("lancamentos").select("*"),
       supabase.from("adendas").select("*"),
       supabase.from("adenda_rubricas").select("id,adenda_id,nome,valor"),
       supabase.from("fornecedores").select("id,nome,nif").eq("ativo", true).order("nome"),
+      supabase.from("clientes").select("id,nome").order("nome"),
+      supabase.from("faturas_emitidas").select("id,obra_id,data,valor,num_fatura"),
     ]);
     const intMap = new Map<string, number>();
     ((ar ?? []) as AdRub[]).forEach(x => intMap.set(x.adenda_id, (intMap.get(x.adenda_id) ?? 0) + Number(x.valor)));
@@ -72,8 +83,11 @@ function Relatorios() {
     setAdendas(((a ?? []) as any[]).map(x => ({ ...x, valor_cliente: Number(x.valor_cliente), valor_interno: intMap.get(x.id) ?? 0 })) as Adenda[]);
     setAdRubs(((ar ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })));
     setFornecedores((f ?? []) as Fornecedor[]);
+    setClientes((c ?? []) as Cliente[]);
+    setFaturas(((fe ?? []) as any[]).map(x => ({ ...x, valor: Number(x.valor) })) as Fatura[]);
     setLoading(false);
   }
+
 
   const obrasActivas = useMemo(
     () => obras.filter(o => ["adjudicada", "em_curso"].includes(o.estado)),
@@ -98,14 +112,29 @@ function Relatorios() {
       </div>
 
       <Tabs defaultValue="dashboard">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="clientes">Por Cliente</TabsTrigger>
+          <TabsTrigger value="rubricas">Por Rubrica</TabsTrigger>
+          <TabsTrigger value="periodo">Por Período</TabsTrigger>
           <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-8">
           <Dashboard obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} fornecedores={fornecedores} />
+        </TabsContent>
+
+        <TabsContent value="clientes" className="space-y-6">
+          <RelatorioPorCliente obras={obras as any} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} clientes={clientes} />
+        </TabsContent>
+
+        <TabsContent value="rubricas" className="space-y-6">
+          <RelatorioPorRubrica obras={obras} rubricas={rubricas} lancamentos={lancamentos} adRubs={adRubs} adendas={adendas} />
+        </TabsContent>
+
+        <TabsContent value="periodo" className="space-y-6">
+          <RelatorioPorPeriodo lancamentos={lancamentos} faturas={faturas} obras={obras} />
         </TabsContent>
 
         <TabsContent value="fornecedores" className="space-y-6">
@@ -118,6 +147,7 @@ function Relatorios() {
             geradoPor={nome || "—"}
           />
         </TabsContent>
+
       </Tabs>
     </div>
   );
