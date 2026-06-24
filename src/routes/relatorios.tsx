@@ -680,8 +680,8 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
 // ============================================================
 // Tab Exportar PDF
 // ============================================================
-function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor }: {
-  obras: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[]; geradoPor: string;
+function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor, periodoLabel }: {
+  obras: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[]; geradoPor: string; periodoLabel?: string;
 }) {
   const hoje = new Date();
   const [obraId, setObraId] = useState<string>(obras[0]?.id ?? "");
