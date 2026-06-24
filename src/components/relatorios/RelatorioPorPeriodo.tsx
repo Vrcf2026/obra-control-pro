@@ -26,18 +26,19 @@ export function RelatorioPorPeriodo({ lancamentos, faturas, obras }: Props) {
 
   const [ano, setAno] = useState<number>(new Date().getFullYear());
   const [obraId, setObraId] = useState<string>("__todas__");
+  const [homologo, setHomologo] = useState<boolean>(false);
 
-  const dados = useMemo(() => {
+  function calcAno(targetAno: number) {
     const meses = MESES.map((m, i) => ({ mes: m, idx: i, gasto: 0, faturacao: 0, margem: 0 }));
     lancamentos.forEach(l => {
       const d = new Date(l.data);
-      if (d.getFullYear() !== ano) return;
+      if (d.getFullYear() !== targetAno) return;
       if (obraId !== "__todas__" && l.obra_id !== obraId) return;
       meses[d.getMonth()].gasto += Number(l.valor);
     });
     faturas.forEach(f => {
       const d = new Date(f.data);
-      if (d.getFullYear() !== ano) return;
+      if (d.getFullYear() !== targetAno) return;
       if (obraId !== "__todas__" && f.obra_id !== obraId) return;
       meses[d.getMonth()].faturacao += Number(f.valor);
     });
@@ -47,16 +48,38 @@ export function RelatorioPorPeriodo({ lancamentos, faturas, obras }: Props) {
       acGasto += m.gasto; acFat += m.faturacao;
       return { ...m, acGasto, acFat };
     });
-  }, [lancamentos, faturas, ano, obraId]);
+  }
+
+  const dados = useMemo(() => {
+    const cur = calcAno(ano);
+    if (!homologo) return cur;
+    const prev = calcAno(ano - 1);
+    return cur.map((m, i) => ({
+      ...m,
+      faturacaoH: prev[i].faturacao,
+      gastoH: prev[i].gasto,
+      margemH: prev[i].margem,
+      deltaFatPct: prev[i].faturacao > 0 ? ((m.faturacao - prev[i].faturacao) / prev[i].faturacao) * 100 : null,
+      deltaGastoPct: prev[i].gasto > 0 ? ((m.gasto - prev[i].gasto) / prev[i].gasto) * 100 : null,
+    }));
+  }, [lancamentos, faturas, ano, obraId, homologo]);
 
   const tot = dados.reduce((a, m) => ({ gasto: a.gasto + m.gasto, fat: a.fat + m.faturacao }), { gasto: 0, fat: 0 });
   const totMargem = tot.fat - tot.gasto;
+  const totHomologo = homologo
+    ? dados.reduce((a, m: any) => ({ gasto: a.gasto + (m.gastoH ?? 0), fat: a.fat + (m.faturacaoH ?? 0) }), { gasto: 0, fat: 0 })
+    : null;
 
   function exportar() {
-    const data: (string | number)[][] = dados.map(m => [m.mes, m.faturacao, m.gasto, m.margem, m.acFat, m.acGasto]);
-    data.push(["TOTAL", tot.fat, tot.gasto, totMargem, tot.fat, tot.gasto]);
-    exportXlsx(`relatorio_periodo_${ano}_${obraId === "__todas__" ? "global" : obraId.slice(0,8)}`, [
-      { name: `${ano}`, header: ["Mês", "Faturação (€)", "Gasto (€)", "Margem (€)", "Faturação acum.", "Gasto acum."], rows: data, colWidths: [10, 16, 16, 16, 18, 18] },
+    const headers = homologo
+      ? ["Mês", `Fat ${ano}`, `Fat ${ano-1}`, "Δ Fat %", `Gasto ${ano}`, `Gasto ${ano-1}`, "Δ Gasto %", `Margem ${ano}`, `Margem ${ano-1}`]
+      : ["Mês", "Faturação (€)", "Gasto (€)", "Margem (€)", "Faturação acum.", "Gasto acum."];
+    const data: (string | number | null)[][] = homologo
+      ? dados.map((m: any) => [m.mes, m.faturacao, m.faturacaoH, m.deltaFatPct == null ? "" : Number(m.deltaFatPct.toFixed(1)), m.gasto, m.gastoH, m.deltaGastoPct == null ? "" : Number(m.deltaGastoPct.toFixed(1)), m.margem, m.margemH])
+      : dados.map(m => [m.mes, m.faturacao, m.gasto, m.margem, (m as any).acFat, (m as any).acGasto]);
+    if (!homologo) data.push(["TOTAL", tot.fat, tot.gasto, totMargem, tot.fat, tot.gasto]);
+    exportXlsx(`relatorio_periodo_${ano}${homologo ? "_vs_" + (ano-1) : ""}_${obraId === "__todas__" ? "global" : obraId.slice(0,8)}`, [
+      { name: `${ano}${homologo ? " vs " + (ano-1) : ""}`, header: headers, rows: data, colWidths: headers.map(() => 16) },
     ]);
   }
 
