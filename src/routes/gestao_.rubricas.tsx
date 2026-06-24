@@ -153,16 +153,20 @@ function Page() {
   }
 
   const parents = rows.filter((r) => !r.parent_id).sort((a, b) => a.ordem - b.ordem);
-  const flatList: { rub: Rub; isSub: boolean }[] = [];
-  parents.forEach((p) => {
-    flatList.push({ rub: p, isSub: false });
-    rows
-      .filter((r) => r.parent_id === p.id)
-      .sort((a, b) => a.ordem - b.ordem)
-      .forEach((s) => {
-        flatList.push({ rub: s, isSub: true });
-      });
+  const childrenByParent = new Map<string, Rub[]>();
+  parents.forEach(p => {
+    childrenByParent.set(p.id, rows.filter(r => r.parent_id === p.id).sort((a, b) => a.ordem - b.ordem));
   });
+  const flatList: { rub: Rub; isSub: boolean; hasChildren: boolean; isCollapsed: boolean }[] = [];
+  parents.forEach((p) => {
+    const kids = childrenByParent.get(p.id) ?? [];
+    const isCollapsed = collapsed.has(p.id);
+    flatList.push({ rub: p, isSub: false, hasChildren: kids.length > 0, isCollapsed });
+    if (!isCollapsed) kids.forEach((s) => flatList.push({ rub: s, isSub: true, hasChildren: false, isCollapsed: false }));
+  });
+
+  const allParentIds = parents.filter(p => (childrenByParent.get(p.id) ?? []).length > 0).map(p => p.id);
+  const allCollapsed = allParentIds.length > 0 && allParentIds.every(id => collapsed.has(id));
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-3xl">
