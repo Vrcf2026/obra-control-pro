@@ -185,12 +185,24 @@ function Page() {
               <strong>Subempreitada</strong> estão sempre presentes em todas as obras.
             </p>
           </div>
-          <button
-            onClick={novo}
-            className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" /> Nova rubrica
-          </button>
+          <div className="flex gap-2">
+            {allParentIds.length > 0 && (
+              <button
+                onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(allParentIds))}
+                className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
+                title={allCollapsed ? "Expandir tudo" : "Colapsar tudo"}
+              >
+                {allCollapsed ? <ChevronsUpDown className="w-4 h-4" /> : <ChevronsDownUp className="w-4 h-4" />}
+                {allCollapsed ? "Expandir" : "Colapsar"}
+              </button>
+            )}
+            <button
+              onClick={novo}
+              className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" /> Nova rubrica
+            </button>
+          </div>
         </div>
       </div>
 
