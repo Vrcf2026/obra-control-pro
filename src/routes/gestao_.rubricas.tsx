@@ -217,8 +217,9 @@ function Page() {
             </tr>
           </thead>
           <tbody>
-            {flatList.map(({ rub: r, isSub }) => {
+            {flatList.map(({ rub: r, isSub, hasChildren, isCollapsed }) => {
               const isFixed = RUBRICAS_FIXAS.includes(r.nome);
+              const childCount = hasChildren ? (childrenByParent.get(r.id)?.length ?? 0) : 0;
               return (
                 <tr key={r.id} className={`border-t border-border ${isSub ? "bg-muted/20" : ""}`}>
                   <td className="p-2">
