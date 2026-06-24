@@ -199,7 +199,7 @@ function Auditoria() {
 
       {detalhe && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDetalhe(null)}>
-          <div className="bg-card border border-border rounded-lg max-w-3xl w-full max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-lg max-w-3xl w-full max-h-[85vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h3 className="font-medium">{acaoLabel[detalhe.acao]} — {entidadeLabel[detalhe.entidade] ?? detalhe.entidade}</h3>
               <button onClick={() => setDetalhe(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
@@ -207,22 +207,87 @@ function Auditoria() {
             <div className="p-4 space-y-3 text-sm">
               <div><span className="text-muted-foreground">Utilizador: </span>{detalhe.user_email ?? "—"}</div>
               <div><span className="text-muted-foreground">Quando: </span>{new Date(detalhe.created_at).toLocaleString("pt-PT")}</div>
-              {detalhe.dados_antes && (
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground mb-1">Dados antes</div>
-                  <pre className="bg-muted/50 rounded-md p-3 text-xs overflow-auto">{JSON.stringify(detalhe.dados_antes, null, 2)}</pre>
-                </div>
-              )}
-              {detalhe.dados_depois && (
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground mb-1">Dados depois</div>
-                  <pre className="bg-muted/50 rounded-md p-3 text-xs overflow-auto">{JSON.stringify(detalhe.dados_depois, null, 2)}</pre>
-                </div>
-              )}
+              <DiffView acao={detalhe.acao} antes={detalhe.dados_antes} depois={detalhe.dados_depois} />
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DiffView({ acao, antes, depois }: { acao: string; antes: any; depois: any }) {
+  const HIDDEN = new Set(["id", "created_at", "updated_at"]);
+  const formatVal = (v: any): string => {
+    if (v === null || v === undefined) return "—";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  };
+  const keys = Array.from(new Set([
+    ...Object.keys(antes ?? {}),
+    ...Object.keys(depois ?? {}),
+  ])).filter(k => !HIDDEN.has(k)).sort();
+
+  if (acao === "INSERT") {
+    return (
+      <div>
+        <div className="text-xs uppercase text-muted-foreground mb-2">Dados criados</div>
+        <table className="w-full text-xs">
+          <tbody>
+            {keys.map(k => (
+              <tr key={k} className="border-b border-border/40">
+                <td className="py-1 pr-3 font-medium text-muted-foreground align-top w-1/3">{k}</td>
+                <td className="py-1 text-green-700 dark:text-green-400 break-all">{formatVal(depois?.[k])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  if (acao === "DELETE") {
+    return (
+      <div>
+        <div className="text-xs uppercase text-muted-foreground mb-2">Dados eliminados</div>
+        <table className="w-full text-xs">
+          <tbody>
+            {keys.map(k => (
+              <tr key={k} className="border-b border-border/40">
+                <td className="py-1 pr-3 font-medium text-muted-foreground align-top w-1/3">{k}</td>
+                <td className="py-1 text-red-700 dark:text-red-400 line-through break-all">{formatVal(antes?.[k])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  // UPDATE — show only changed fields
+  const changed = keys.filter(k => formatVal(antes?.[k]) !== formatVal(depois?.[k]));
+  if (changed.length === 0) {
+    return <div className="text-sm text-muted-foreground italic">Sem alterações detectadas nos campos.</div>;
+  }
+  return (
+    <div>
+      <div className="text-xs uppercase text-muted-foreground mb-2">Campos alterados ({changed.length})</div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-muted-foreground border-b border-border">
+            <th className="text-left py-1 pr-2 font-medium w-1/4">Campo</th>
+            <th className="text-left py-1 pr-2 font-medium">Antes</th>
+            <th className="text-left py-1 font-medium">Depois</th>
+          </tr>
+        </thead>
+        <tbody>
+          {changed.map(k => (
+            <tr key={k} className="border-b border-border/40 align-top">
+              <td className="py-1 pr-2 font-medium">{k}</td>
+              <td className="py-1 pr-2 text-red-700 dark:text-red-400 break-all">{formatVal(antes?.[k])}</td>
+              <td className="py-1 text-green-700 dark:text-green-400 break-all">{formatVal(depois?.[k])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

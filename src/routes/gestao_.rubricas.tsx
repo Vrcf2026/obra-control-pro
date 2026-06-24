@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
@@ -32,6 +32,15 @@ function Page() {
   const [delRub, setDelRub] = useState<Rub | null>(null);
   const [addingSubOf, setAddingSubOf] = useState<string | null>(null);
   const [subNome, setSubNome] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCollapse(id: string) {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     load();
@@ -144,16 +153,20 @@ function Page() {
   }
 
   const parents = rows.filter((r) => !r.parent_id).sort((a, b) => a.ordem - b.ordem);
-  const flatList: { rub: Rub; isSub: boolean }[] = [];
-  parents.forEach((p) => {
-    flatList.push({ rub: p, isSub: false });
-    rows
-      .filter((r) => r.parent_id === p.id)
-      .sort((a, b) => a.ordem - b.ordem)
-      .forEach((s) => {
-        flatList.push({ rub: s, isSub: true });
-      });
+  const childrenByParent = new Map<string, Rub[]>();
+  parents.forEach(p => {
+    childrenByParent.set(p.id, rows.filter(r => r.parent_id === p.id).sort((a, b) => a.ordem - b.ordem));
   });
+  const flatList: { rub: Rub; isSub: boolean; hasChildren: boolean; isCollapsed: boolean }[] = [];
+  parents.forEach((p) => {
+    const kids = childrenByParent.get(p.id) ?? [];
+    const isCollapsed = collapsed.has(p.id);
+    flatList.push({ rub: p, isSub: false, hasChildren: kids.length > 0, isCollapsed });
+    if (!isCollapsed) kids.forEach((s) => flatList.push({ rub: s, isSub: true, hasChildren: false, isCollapsed: false }));
+  });
+
+  const allParentIds = parents.filter(p => (childrenByParent.get(p.id) ?? []).length > 0).map(p => p.id);
+  const allCollapsed = allParentIds.length > 0 && allParentIds.every(id => collapsed.has(id));
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-3xl">
@@ -172,12 +185,24 @@ function Page() {
               <strong>Subempreitada</strong> estão sempre presentes em todas as obras.
             </p>
           </div>
-          <button
-            onClick={novo}
-            className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" /> Nova rubrica
-          </button>
+          <div className="flex gap-2">
+            {allParentIds.length > 0 && (
+              <button
+                onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(allParentIds))}
+                className="border border-input px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
+                title={allCollapsed ? "Expandir tudo" : "Colapsar tudo"}
+              >
+                {allCollapsed ? <ChevronsUpDown className="w-4 h-4" /> : <ChevronsDownUp className="w-4 h-4" />}
+                {allCollapsed ? "Expandir" : "Colapsar"}
+              </button>
+            )}
+            <button
+              onClick={novo}
+              className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm inline-flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" /> Nova rubrica
+            </button>
+          </div>
         </div>
       </div>
 
@@ -192,8 +217,9 @@ function Page() {
             </tr>
           </thead>
           <tbody>
-            {flatList.map(({ rub: r, isSub }) => {
+            {flatList.map(({ rub: r, isSub, hasChildren, isCollapsed }) => {
               const isFixed = RUBRICAS_FIXAS.includes(r.nome);
+              const childCount = hasChildren ? (childrenByParent.get(r.id)?.length ?? 0) : 0;
               return (
                 <tr key={r.id} className={`border-t border-border ${isSub ? "bg-muted/20" : ""}`}>
                   <td className="p-2">
@@ -229,6 +255,15 @@ function Page() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
+                        {hasChildren && (
+                          <button
+                            onClick={() => toggleCollapse(r.id)}
+                            className="text-muted-foreground hover:text-foreground p-0.5 -ml-1"
+                            title={isCollapsed ? "Expandir" : "Colapsar"}
+                          >
+                            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setEditId(r.id);
@@ -240,6 +275,9 @@ function Page() {
                         </button>
                         {isFixed && (
                           <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded ml-1">base</span>
+                        )}
+                        {hasChildren && isCollapsed && (
+                          <span className="text-xs text-muted-foreground ml-1">({childCount})</span>
                         )}
                       </div>
                     )}

@@ -111,45 +111,113 @@ function Relatorios() {
         <p className="text-sm text-muted-foreground">Dashboard executivo e exportação</p>
       </div>
 
-      <Tabs defaultValue="dashboard">
-        <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="clientes">Por Cliente</TabsTrigger>
-          <TabsTrigger value="rubricas">Por Rubrica</TabsTrigger>
-          <TabsTrigger value="periodo">Por Período</TabsTrigger>
-          <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
-          <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
-        </TabsList>
+      <FiltroPeriodoGlobal
+        lancamentos={lancamentos}
+        faturas={faturas}
+        render={({ lancamentosF, faturasF, periodoLabel }) => (
+          <Tabs defaultValue="dashboard">
+            <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="clientes">Por Cliente</TabsTrigger>
+              <TabsTrigger value="rubricas">Por Rubrica</TabsTrigger>
+              <TabsTrigger value="periodo">Por Período</TabsTrigger>
+              <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+              <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-8">
-          <Dashboard obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs} fornecedores={fornecedores} />
-        </TabsContent>
+            <TabsContent value="dashboard" className="space-y-8">
+              <Dashboard obras={obras} obrasActivas={obrasActivas} rubricas={rubricas} lancamentos={lancamentosF} adendas={adendas} adRubs={adRubs} fornecedores={fornecedores} />
+            </TabsContent>
 
-        <TabsContent value="clientes" className="space-y-6">
-          <RelatorioPorCliente obras={obras as any} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} clientes={clientes} />
-        </TabsContent>
+            <TabsContent value="clientes" className="space-y-6">
+              <RelatorioPorCliente obras={obras as any} rubricas={rubricas} lancamentos={lancamentosF} adendas={adendas} clientes={clientes} />
+            </TabsContent>
 
-        <TabsContent value="rubricas" className="space-y-6">
-          <RelatorioPorRubrica obras={obras} rubricas={rubricas} lancamentos={lancamentos} adRubs={adRubs} adendas={adendas} />
-        </TabsContent>
+            <TabsContent value="rubricas" className="space-y-6">
+              <RelatorioPorRubrica obras={obras} rubricas={rubricas} lancamentos={lancamentosF} adRubs={adRubs} adendas={adendas} />
+            </TabsContent>
 
-        <TabsContent value="periodo" className="space-y-6">
-          <RelatorioPorPeriodo lancamentos={lancamentos} faturas={faturas} obras={obras} />
-        </TabsContent>
+            <TabsContent value="periodo" className="space-y-6">
+              <RelatorioPorPeriodo lancamentos={lancamentos} faturas={faturas} obras={obras} />
+            </TabsContent>
 
-        <TabsContent value="fornecedores" className="space-y-6">
-          <RelatorioFornecedores fornecedores={fornecedores} lancamentos={lancamentos} rubricas={rubricas} obras={obras} adRubs={adRubs} />
-        </TabsContent>
+            <TabsContent value="fornecedores" className="space-y-6">
+              <RelatorioFornecedores fornecedores={fornecedores} lancamentos={lancamentosF} rubricas={rubricas} obras={obras} adRubs={adRubs} />
+            </TabsContent>
 
-        <TabsContent value="pdf" className="space-y-4">
-          <ExportarPDF
-            obras={obras} rubricas={rubricas} lancamentos={lancamentos} adendas={adendas} adRubs={adRubs}
-            geradoPor={nome || "—"}
-          />
-        </TabsContent>
+            <TabsContent value="pdf" className="space-y-4">
+              <ExportarPDF
+                obras={obras} rubricas={rubricas} lancamentos={lancamentosF} adendas={adendas} adRubs={adRubs}
+                geradoPor={nome || "—"}
+                periodoLabel={periodoLabel}
+              />
+            </TabsContent>
 
-      </Tabs>
+          </Tabs>
+        )}
+      />
     </div>
+  );
+}
+
+// ============================================================
+// Filtro de período global
+// ============================================================
+function FiltroPeriodoGlobal({ lancamentos, faturas, render }: {
+  lancamentos: Lanc[]; faturas: Fatura[];
+  render: (args: { lancamentosF: Lanc[]; faturasF: Fatura[]; periodoLabel: string }) => React.ReactNode;
+}) {
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+
+  function preset(tipo: "mes" | "tri" | "ano" | "all") {
+    const hoje = new Date();
+    if (tipo === "all") { setDe(""); setAte(""); return; }
+    if (tipo === "mes") {
+      const ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      setDe(ini.toISOString().slice(0,10));
+      setAte(hoje.toISOString().slice(0,10));
+    } else if (tipo === "tri") {
+      const tri = Math.floor(hoje.getMonth() / 3);
+      const ini = new Date(hoje.getFullYear(), tri * 3, 1);
+      setDe(ini.toISOString().slice(0,10));
+      setAte(hoje.toISOString().slice(0,10));
+    } else if (tipo === "ano") {
+      setDe(`${hoje.getFullYear()}-01-01`);
+      setAte(hoje.toISOString().slice(0,10));
+    }
+  }
+
+  const { lancamentosF, faturasF, periodoLabel } = useMemo(() => {
+    const ok = (d: string) => (!de || d >= de) && (!ate || d <= ate);
+    const lf = lancamentos.filter(l => ok(l.data));
+    const ff = faturas.filter(f => ok(f.data));
+    const lbl = !de && !ate ? "Todo o histórico" : `${de || "início"} → ${ate || "hoje"}`;
+    return { lancamentosF: lf, faturasF: ff, periodoLabel: lbl };
+  }, [lancamentos, faturas, de, ate]);
+
+  return (
+    <>
+      <div className="bg-card border border-border rounded-lg p-3 flex flex-wrap items-center gap-2 sticky top-0 z-10">
+        <span className="text-xs uppercase text-muted-foreground font-medium px-1">Período</span>
+        <input type="date" value={de} onChange={e => setDe(e.target.value)}
+          className="border border-input rounded-md px-2 py-1.5 text-sm bg-background" />
+        <span className="text-xs text-muted-foreground">→</span>
+        <input type="date" value={ate} onChange={e => setAte(e.target.value)}
+          className="border border-input rounded-md px-2 py-1.5 text-sm bg-background" />
+        <div className="flex gap-1 ml-2">
+          <button onClick={() => preset("mes")} className="text-xs px-2 py-1 rounded border border-input hover:bg-muted">Mês</button>
+          <button onClick={() => preset("tri")} className="text-xs px-2 py-1 rounded border border-input hover:bg-muted">Trimestre</button>
+          <button onClick={() => preset("ano")} className="text-xs px-2 py-1 rounded border border-input hover:bg-muted">Ano</button>
+          <button onClick={() => preset("all")} className="text-xs px-2 py-1 rounded border border-input hover:bg-muted">Tudo</button>
+        </div>
+        <div className="flex-1" />
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {lancamentosF.length} lanç. · {faturasF.length} fact.
+        </span>
+      </div>
+      {render({ lancamentosF, faturasF, periodoLabel })}
+    </>
   );
 }
 
@@ -612,8 +680,8 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
 // ============================================================
 // Tab Exportar PDF
 // ============================================================
-function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor }: {
-  obras: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[]; geradoPor: string;
+function ExportarPDF({ obras, rubricas, lancamentos, adendas, adRubs, geradoPor, periodoLabel }: {
+  obras: Obra[]; rubricas: Rubrica[]; lancamentos: Lanc[]; adendas: Adenda[]; adRubs: AdRub[]; geradoPor: string; periodoLabel?: string;
 }) {
   const hoje = new Date();
   const [obraId, setObraId] = useState<string>(obras[0]?.id ?? "");
