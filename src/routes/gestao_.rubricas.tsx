@@ -32,6 +32,15 @@ function Page() {
   const [delRub, setDelRub] = useState<Rub | null>(null);
   const [addingSubOf, setAddingSubOf] = useState<string | null>(null);
   const [subNome, setSubNome] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleCollapse(id: string) {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     load();
