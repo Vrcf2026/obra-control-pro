@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Protected } from "@/components/Protected";
-import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Check, X, Pencil, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
