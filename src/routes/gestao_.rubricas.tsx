@@ -255,6 +255,15 @@ function Page() {
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
+                        {hasChildren && (
+                          <button
+                            onClick={() => toggleCollapse(r.id)}
+                            className="text-muted-foreground hover:text-foreground p-0.5 -ml-1"
+                            title={isCollapsed ? "Expandir" : "Colapsar"}
+                          >
+                            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setEditId(r.id);
@@ -266,6 +275,9 @@ function Page() {
                         </button>
                         {isFixed && (
                           <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded ml-1">base</span>
+                        )}
+                        {hasChildren && isCollapsed && (
+                          <span className="text-xs text-muted-foreground ml-1">({childCount})</span>
                         )}
                       </div>
                     )}
