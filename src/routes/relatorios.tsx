@@ -18,6 +18,7 @@ import autoTable from "jspdf-autotable";
 import { RelatorioPorCliente } from "@/components/relatorios/RelatorioPorCliente";
 import { RelatorioPorRubrica } from "@/components/relatorios/RelatorioPorRubrica";
 import { RelatorioPorPeriodo } from "@/components/relatorios/RelatorioPorPeriodo";
+import { RelatorioSnapshots } from "@/components/relatorios/RelatorioSnapshots";
 
 
 export const Route = createFileRoute("/relatorios")({ component: Page });
@@ -122,6 +123,7 @@ function Relatorios() {
               <TabsTrigger value="rubricas">Por Rubrica</TabsTrigger>
               <TabsTrigger value="periodo">Por Período</TabsTrigger>
               <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+              <TabsTrigger value="snapshots">Snapshots</TabsTrigger>
               <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
             </TabsList>
 
@@ -144,6 +146,11 @@ function Relatorios() {
             <TabsContent value="fornecedores" className="space-y-6">
               <RelatorioFornecedores fornecedores={fornecedores} lancamentos={lancamentosF} rubricas={rubricas} obras={obras} adRubs={adRubs} />
             </TabsContent>
+
+            <TabsContent value="snapshots" className="space-y-6">
+              <RelatorioSnapshots obras={obras} />
+            </TabsContent>
+
 
             <TabsContent value="pdf" className="space-y-4">
               <ExportarPDF

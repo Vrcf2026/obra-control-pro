@@ -84,6 +84,42 @@ export type Database = {
           },
         ]
       }
+      anexos: {
+        Row: {
+          created_at: string
+          entidade: string
+          entidade_id: string
+          id: string
+          mime: string | null
+          nome: string
+          path: string
+          tamanho: number | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          entidade: string
+          entidade_id: string
+          id?: string
+          mime?: string | null
+          nome: string
+          path: string
+          tamanho?: number | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          entidade?: string
+          entidade_id?: string
+          id?: string
+          mime?: string | null
+          nome?: string
+          path?: string
+          tamanho?: number | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           acao: string
@@ -338,6 +374,42 @@ export type Database = {
           },
         ]
       }
+      notificacoes: {
+        Row: {
+          chave: string | null
+          corpo: string | null
+          created_at: string
+          id: string
+          lida: boolean
+          link: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          chave?: string | null
+          corpo?: string | null
+          created_at?: string
+          id?: string
+          lida?: boolean
+          link?: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          chave?: string | null
+          corpo?: string | null
+          created_at?: string
+          id?: string
+          lida?: boolean
+          link?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       obra_estado_log: {
         Row: {
           alterado_em: string
@@ -366,6 +438,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "obra_estado_log_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_snapshots_mensais: {
+        Row: {
+          ano: number
+          created_at: string
+          custo_acumulado: number
+          faturado_acumulado: number
+          id: string
+          margem: number
+          margem_pct: number | null
+          mes: number
+          obra_id: string
+          orcamento_total: number
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          custo_acumulado?: number
+          faturado_acumulado?: number
+          id?: string
+          margem?: number
+          margem_pct?: number | null
+          mes: number
+          obra_id: string
+          orcamento_total?: number
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          custo_acumulado?: number
+          faturado_acumulado?: number
+          id?: string
+          margem?: number
+          margem_pct?: number | null
+          mes?: number
+          obra_id?: string
+          orcamento_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_snapshots_mensais_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
@@ -613,6 +732,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      gerar_notificacoes: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -621,6 +741,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      pode_ver_anexo: {
+        Args: { _entidade: string; _entidade_id: string; _user_id: string }
+        Returns: boolean
+      }
+      snapshot_obras_mes: {
+        Args: { _ano: number; _mes: number }
+        Returns: number
+      }
       user_has_obra: {
         Args: { _obra_id: string; _user_id: string }
         Returns: boolean

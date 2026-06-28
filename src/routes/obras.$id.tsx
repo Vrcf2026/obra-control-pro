@@ -9,6 +9,7 @@ import { Plus, ArrowLeft, Receipt, FileText, X, Trash2, Pencil, ChevronDown, Che
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Modal, Field, ModalActions } from "@/components/Modal";
 import { SkeletonCard, SkeletonTable } from "@/components/SkeletonTable";
+import { AnexosPanel } from "@/components/AnexosPanel";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -879,6 +880,10 @@ function Detalhe() {
           )}
         </div>
       )}
+
+      <AnexosPanel entidade="obra" entidadeId={id} />
+
+
 
       <AlertDialog open={!!delFatId} onOpenChange={(o) => !o && setDelFatId(null)}>
         <AlertDialogContent>

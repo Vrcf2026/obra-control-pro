@@ -1,6 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, HardHat, Settings, LogOut, Building2, BarChart2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { NotificationBell } from "@/components/NotificationBell";
 import type { ReactNode } from "react";
 
 const allNav = [
@@ -44,7 +45,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="p-3 border-t border-sidebar-border">
-          <div className="px-3 py-2 text-xs opacity-70">{nome || "Utilizador"} · <span className="capitalize">{role}</span></div>
+          <div className="px-3 py-2 flex items-center justify-between gap-2">
+            <div className="text-xs opacity-70 truncate">{nome || "Utilizador"} · <span className="capitalize">{role}</span></div>
+            <NotificationBell />
+          </div>
           <button onClick={async () => { await signOut(); navigate({ to: "/login" }); }}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent/60">
             <LogOut className="w-4 h-4" /> Sair
@@ -59,9 +63,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="font-bold text-lg" style={{ color: "#5b9bd5" }}>decoverdi</span>
             <span className="text-xs opacity-70">Gestão de Obras</span>
           </div>
-          <button onClick={async () => { await signOut(); navigate({ to: "/login" }); }} className="text-sm opacity-80">
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button onClick={async () => { await signOut(); navigate({ to: "/login" }); }} className="text-sm opacity-80 p-2">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
