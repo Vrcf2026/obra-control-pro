@@ -1,6 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, HardHat, Settings, LogOut, Building2, BarChart2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { NotificationBell } from "@/components/NotificationBell";
 import type { ReactNode } from "react";
 
 const allNav = [
