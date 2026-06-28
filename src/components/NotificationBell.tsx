@@ -114,8 +114,8 @@ export function NotificationBell() {
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       {n.link ? (
-                        <Link to={n.link} onClick={() => { marcarLida(n.id); setOpen(false); }}
-                          className="font-medium hover:underline block truncate">{n.titulo}</Link>
+                        <button onClick={() => { marcarLida(n.id); setOpen(false); navigate({ to: n.link! }); }}
+                          className="font-medium hover:underline block truncate text-left w-full">{n.titulo}</button>
                       ) : (
                         <div className="font-medium truncate">{n.titulo}</div>
                       )}
