@@ -18,6 +18,7 @@ import autoTable from "jspdf-autotable";
 import { RelatorioPorCliente } from "@/components/relatorios/RelatorioPorCliente";
 import { RelatorioPorRubrica } from "@/components/relatorios/RelatorioPorRubrica";
 import { RelatorioPorPeriodo } from "@/components/relatorios/RelatorioPorPeriodo";
+import { RelatorioSnapshots } from "@/components/relatorios/RelatorioSnapshots";
 
 
 export const Route = createFileRoute("/relatorios")({ component: Page });
