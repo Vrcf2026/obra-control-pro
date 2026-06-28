@@ -63,9 +63,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="font-bold text-lg" style={{ color: "#5b9bd5" }}>decoverdi</span>
             <span className="text-xs opacity-70">Gestão de Obras</span>
           </div>
-          <button onClick={async () => { await signOut(); navigate({ to: "/login" }); }} className="text-sm opacity-80">
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button onClick={async () => { await signOut(); navigate({ to: "/login" }); }} className="text-sm opacity-80 p-2">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
