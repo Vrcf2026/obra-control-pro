@@ -123,6 +123,7 @@ function Relatorios() {
               <TabsTrigger value="rubricas">Por Rubrica</TabsTrigger>
               <TabsTrigger value="periodo">Por Período</TabsTrigger>
               <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+              <TabsTrigger value="snapshots">Snapshots</TabsTrigger>
               <TabsTrigger value="pdf">Exportar PDF</TabsTrigger>
             </TabsList>
 
