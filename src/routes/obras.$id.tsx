@@ -881,6 +881,10 @@ function Detalhe() {
         </div>
       )}
 
+      <AnexosPanel entidade="obra" entidadeId={id} />
+
+
+
       <AlertDialog open={!!delFatId} onOpenChange={(o) => !o && setDelFatId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
