@@ -147,6 +147,11 @@ function Relatorios() {
               <RelatorioFornecedores fornecedores={fornecedores} lancamentos={lancamentosF} rubricas={rubricas} obras={obras} adRubs={adRubs} />
             </TabsContent>
 
+            <TabsContent value="snapshots" className="space-y-6">
+              <RelatorioSnapshots obras={obras} />
+            </TabsContent>
+
+
             <TabsContent value="pdf" className="space-y-4">
               <ExportarPDF
                 obras={obras} rubricas={rubricas} lancamentos={lancamentosF} adendas={adendas} adRubs={adRubs}
