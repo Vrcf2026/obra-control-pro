@@ -15,7 +15,7 @@ interface Notif {
   created_at: string;
 }
 
-export function NotificationBell() {
+const navigate = useNavigate();
   const { user, role } = useAuth();
   const [items, setItems] = useState<Notif[]>([]);
   const [open, setOpen] = useState(false);
